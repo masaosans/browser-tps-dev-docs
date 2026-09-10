@@ -23,12 +23,12 @@
       width: 150px; height: 150px; pointer-events: auto;
     }
     
-    /* 射撃ボタン（右上） */
+    /* 射撃ボタン（右下 — reload/coverの上に配置） */
     #fire-btn {
-      position: absolute; top: 80px; right: 30px;
-      width: 70px; height: 70px; border-radius: 50%;
-      background: rgba(255,68,68,0.7); border: 3px solid white;
-      color: white; font-size: 14px; font-weight: bold;
+      position: absolute; bottom: 150px; right: 30px;
+      width: 80px; height: 80px; border-radius: 50%;
+      background: rgba(255,68,68,0.8); border: 4px solid white;
+      color: white; font-size: 16px; font-weight: bold;
       pointer-events: auto; cursor: pointer;
     }
     
@@ -572,20 +572,36 @@
     }
     
     function createTracer(target) {
-      // カメラ位置から命中点へ線を描画（簡易トレーサー）
+      // カメラ位置から命中点へ線を描画（太く明るいトレーサー）
       const points = [camera.position.clone(), target];
       const geo = new THREE.BufferGeometry().setFromPoints(points);
+      
+      // 太い線 + 明るい黄色 + 光るエフェクト
       const mat = new THREE.LineBasicMaterial({ 
-        color: 0xffff44, 
+        color: 0xffff00,       // より明るい黄色
+        linewidth: 3,           // 線の太さ（ブラウザ依存）
         transparent: true, 
-        opacity: 0.6 
+        opacity: 1.0            // 最初は完全不透明
       });
       const line = new THREE.Line(geo, mat);
+      
+      // 追加: 中心に白いコア線（視認性向上）
+      const coreGeo = new THREE.BufferGeometry().setFromPoints(points);
+      const coreMat = new THREE.LineBasicMaterial({ 
+        color: 0xffffff, 
+        transparent: true, 
+        opacity: 0.8 
+      });
+      const coreLine = new THREE.Line(coreGeo, coreMat);
+      
       scene.add(line);
+      scene.add(coreLine);
       
       tracers.push({
         line: line,
-        life: 0.1 // 0.1秒で消える
+        coreLine: coreLine,  // コア線も管理
+        life: 0.15,           // 0.15秒で消える（少し長く）
+        maxLife: 0.15
       });
     }
     
@@ -885,16 +901,20 @@
         }
       }
       
-      // トレーサーの更新
+      // トレーサーの更新（外側黄色線 + 内側白色コア）
       for (let i = tracers.length - 1; i >= 0; i--) {
         const tracer = tracers[i];
         tracer.life -= delta;
         
         if (tracer.life <= 0) {
           scene.remove(tracer.line);
+          scene.remove(tracer.coreLine);
           tracers.splice(i, 1);
         } else {
-          tracer.line.material.opacity = tracer.life / 0.1 * 0.6;
+          // フェードアウト（外側線）
+          tracer.line.material.opacity = tracer.life / tracer.maxLife;
+          // コア線も少し長く残す
+          tracer.coreLine.material.opacity = (tracer.life / tracer.maxLife) * 0.8;
         }
       }
       
