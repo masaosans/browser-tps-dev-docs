@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>🎮 Browser TPS - Phase 1</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { overflow: hidden; touch-action: none; background: #000; font-family: sans-serif; }
+    
+    /* ゲームキャンバス */
+    #game-canvas { display: block; width: 100vw; height: 100vh; }
+    
+    /* UIオーバーレイ層 */
+    #ui-layer {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 10;
+    }
+    
+    /* ジョイスティックゾーン（左下） */
+    #joystick-zone {
+      position: absolute; bottom: 20px; left: 20px;
+      width: 150px; height: 150px; pointer-events: auto;
+    }
+    
+    /* 射撃ボタン（右上） */
+    #fire-btn {
+      position: absolute; top: 80px; right: 30px;
+      width: 70px; height: 70px; border-radius: 50%;
+      background: rgba(255,68,68,0.7); border: 3px solid white;
+      color: white; font-size: 14px; font-weight: bold;
+      pointer-events: auto; cursor: pointer;
+    }
+    
+    /* リロードボタン（右下） */
+    #reload-btn {
+      position: absolute; bottom: 20px; right: 30px;
+      width: 55px; height: 55px; border-radius: 50%;
+      background: rgba(68,136,255,0.7); border: 2px solid white;
+      color: white; font-size: 11px; font-weight: bold;
+      pointer-events: auto; cursor: pointer;
+    }
+    
+    /* カバボタン（右下） */
+    #cover-btn {
+      position: absolute; bottom: 80px; right: 30px;
+      width: 55px; height: 55px; border-radius: 50%;
+      background: rgba(68,255,68,0.7); border: 2px solid white;
+      color: white; font-size: 11px; font-weight: bold;
+      pointer-events: auto; cursor: pointer;
+    }
+    
+    /* HUD（上部） */
+    #hud {
+      position: absolute; top: 15px; left: 15px; right: 15px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    
+    #hp-container {
+      width: 200px; height: 24px; background: rgba(0,0,0,0.6);
+      border: 2px solid #fff; border-radius: 4px; overflow: hidden;
+    }
+    
+    #hp-fill {
+      height: 100%; background: linear-gradient(to right, #e74c3c, #ff6b6b);
+      width: 100%; transition: width 0.3s;
+    }
+    
+    #score-display {
+      color: white; font-size: 20px; font-weight: bold;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    }
+    
+    /* スタート画面 */
+    #start-screen {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 100; color: white;
+    }
+    
+    #start-screen h1 { font-size: 36px; margin-bottom: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+    #start-screen p { font-size: 16px; margin: 8px 0; opacity: 0.9; }
+    
+    #start-btn {
+      margin-top: 30px; padding: 15px 40px; font-size: 20px; font-weight: bold;
+      background: white; color: #764ba2; border: none; border-radius: 30px;
+      cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+    
+    /* ゲームオーバー画面 */
+    #game-over-screen {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85); display: none; flex-direction: column;
+      align-items: center; justify-content: center; z-index: 100; color: white;
+    }
+    
+    #game-over-screen h1 { font-size: 42px; margin-bottom: 20px; color: #e74c3c; }
+    #final-score { font-size: 28px; margin: 10px 0; }
+    
+    #restart-btn {
+      margin-top: 30px; padding: 15px 40px; font-size: 20px; font-weight: bold;
+      background: #e74c3c; color: white; border: none; border-radius: 30px;
+      cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+    
+    /* FPS表示 */
+    #fps-display {
+      position: absolute; top: 50px; right: 15px; color: white;
+      font-size: 12px; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    }
+  </style>
+</head>
+<body>
+  <!-- スタート画面 -->
+  <div id="start-screen">
+    <h1>🎮 Browser TPS</h1>
+    <p>Phase 1: Basic Movement + Camera</p>
+    <p style="margin-top:20px; font-size:14px;">🕹️ Left Joystick = Move | 👆 Right Swipe = Look</p>
+    <p style="font-size:14px;">🔫 Fire Button = Shoot | 🔄 Reload = R</p>
+    <button id="start-btn">▶ START GAME</button>
+  </div>
+  
+  <!-- ゲームオーバー画面 -->
+  <div id="game-over-screen">
+    <h1>GAME OVER</h1>
+    <div id="final-score">Score: 0</div>
+    <p style="opacity:0.7;">Wave reached: 1</p>
+    <button id="restart-btn">🔄 RESTART</button>
+  </div>
+  
+  <!-- ゲームキャンバス -->
+  <canvas id="game-canvas"></canvas>
+  
+  <!-- UIオーバーレイ -->
+  <div id="ui-layer">
+    <!-- HUD -->
+    <div id="hud">
+      <div id="hp-container"><div id="hp-fill"></div></div>
+      <div id="score-display">Score: 0</div>
+    </div>
+    
+    <!-- FPS表示 -->
+    <div id="fps-display">FPS: --</div>
+    
+    <!-- ジョイスティックゾーン -->
+    <div id="joystick-zone"></div>
+    
+    <!-- ボタン類 -->
+    <button id="fire-btn">🔫 FIRE</button>
+    <button id="reload-btn">R</button>
+    <button id="cover-btn">COVER</button>
+  </div>
+  
+  <!-- nipplejs CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
+  
+  <!-- Three.js importmap -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/"
+    }
+  }
+  </script>
+  
+  <!-- ゲーム本体 -->
+  <script type="module">
+    import * as THREE from 'three';
+    
+    // ============================================================
+    // ゲーム状態
+    // ============================================================
+    const STATE = {
+      playerHealth: 100, maxHealth: 100,
+      score: 0, wave: 1, enemies: [],
+      isPlaying: false, isGameOver: false,
+    };
+    
+    // Spring Armパラメータ
+    const SPRING_ARM = {
+      DISTANCE: 8, HEIGHT: 3.5, LERP_FACTOR: 0.1,
+      MIN_PITCH: -0.5, MAX_PITCH: 1.2, ZOOM_DISTANCE: 4,
+    };
+    
+    let cameraYaw = 0, cameraPitch = 0.3;
+    let currentZoom = SPRING_ARM.DISTANCE;
+    let targetZoom = SPRING_ARM.DISTANCE;
+    
+    // ジョイスティック入力
+    const joystickInput = { x: 0, y: 0, forward: false, back: false, left: false, right: false };
+    
+    // ============================================================
+    // Three.jsシーン初期化（モバイル最適化）
+    // ============================================================
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    
+    const canvas = document.getElementById('game-canvas');
+    const renderer = new THREE.WebGLRenderer({ 
+      canvas, antialias: !isMobile, alpha: false 
+    });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = isMobile ? THREE.BasicShadowMap : THREE.PCFSoftShadowMap;
+    
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x87CEEB); // 空の色（青）
+    scene.fog = new THREE.Fog(0x87CEEB, 20, 100); // フォグで奥をぼかす
+    
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
+    
+    // ライティング
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+    
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(10, 20, 10);
+    directionalLight.castShadow = true;
+    directionalLight.shadow.mapSize.width = 1024;
+    directionalLight.shadow.mapSize.height = 1024;
+    scene.add(directionalLight);
+    
+    // ============================================================
+    // 地面と障害物
+    // ============================================================
+    // 地面
+    const groundGeo = new THREE.PlaneGeometry(100, 100);
+    const groundMat = new THREE.MeshStandardMaterial({ 
+      color: 0x4a7c59, roughness: 0.8 
+    });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+    
+    // グリッドヘルパー（視覚的補助）
+    const gridHelper = new THREE.GridHelper(100, 50, 0x3a6c49, 0x3a6c49);
+    scene.add(gridHelper);
+    
+    // 障害物（箱）
+    function createObstacle(x, z, width, height, depth, color) {
+      const geo = new THREE.BoxGeometry(width, height, depth);
+      const mat = new THREE.MeshStandardMaterial({ color });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(x, height / 2, z);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      scene.add(mesh);
+      return mesh;
+    }
+    
+    // いくつかの障害物を配置
+    createObstacle(-10, -10, 3, 4, 3, 0x8B4513); // 茶色の箱
+    createObstacle(10, -15, 2, 3, 2, 0x696969);   // グレーの箱
+    createObstacle(-15, 5, 4, 2, 4, 0x8B4513);    // 大きな箱
+    createObstacle(15, 10, 3, 5, 3, 0x696969);    // 高い柱
+    
+    // ============================================================
+    // プレイヤーキャラクター
+    // ============================================================
+    const playerGroup = new THREE.Group();
+    
+    // 胴体
+    const bodyGeo = new THREE.CapsuleGeometry(0.4, 1.2, 4, 8);
+    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x3498db });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    body.position.y = 1.2;
+    body.castShadow = true;
+    playerGroup.add(body);
+    
+    // 頭
+    const headGeo = new THREE.SphereGeometry(0.3, 8, 8);
+    const headMat = new THREE.MeshStandardMaterial({ color: 0xffcc99 });
+    const head = new THREE.Mesh(headGeo, headMat);
+    head.position.y = 2.1;
+    head.castShadow = true;
+    playerGroup.add(head);
+    
+    // 武器（右手に保持）
+    const gunGeo = new THREE.BoxGeometry(0.15, 0.15, 0.6);
+    const gunMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+    const gun = new THREE.Mesh(gunGeo, gunMat);
+    gun.position.set(0.5, 1.4, -0.3);
+    playerGroup.add(gun);
+    
+    scene.add(playerGroup);
+    
+    // ============================================================
+    // Spring Armカメラ
+    // ============================================================
+    function updateCamera(delta) {
+      // ズームの滑らかな遷移
+      currentZoom += (targetZoom - currentZoom) * 0.1;
+      
+      // カメラ目標位置を計算（球座標→直交座標）
+      const spherical = new THREE.Spherical(currentZoom, cameraPitch, cameraYaw);
+      const camOffset = new THREE.Vector3().setFromSpherical(spherical);
+      const targetPos = playerGroup.position.clone().add(camOffset);
+      targetPos.y += SPRING_ARM.HEIGHT;
+      
+      // Raycastによる衝突回避（簡易版）
+      const raycaster = new THREE.Raycaster(
+        targetPos.clone(),
+        playerGroup.position.clone().sub(targetPos).normalize(),
+        0, currentZoom
+      );
+      
+      const intersects = raycaster.intersectObjects(scene.children, true);
+      let finalCamPos = targetPos;
+      
+      for (const hit of intersects) {
+        if (hit.distance < currentZoom && hit.point.y > playerGroup.position.y) {
+          finalCamPos = raycaster.ray.at(hit.distance - 0.5, new THREE.Vector3());
+          break;
+        }
+      }
+      
+      // lerpで滑らかに追従
+      camera.position.lerp(finalCamPos, SPRING_ARM.LERP_FACTOR);
+      camera.lookAt(playerGroup.position.clone().add(new THREE.Vector3(0, 1.5, 0)));
+    }
+    
+    // ============================================================
+    // プレイヤー移動（カメラ基準の相対移動）
+    // ============================================================
+    function updatePlayer(delta) {
+      const speed = 6;
+      
+      // カメラの前方ベクトルを取得（Y成分を0＝水平面のみ）
+      const forward = new THREE.Vector3();
+      camera.getWorldDirection(forward);
+      forward.y = 0;
+      forward.normalize();
+      
+      // 右ベクトル（前方×上）
+      const right = new THREE.Vector3();
+      right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+      
+      // ジョイスティック入力から移動方向を計算
+      const moveDir = new THREE.Vector3();
+      if (joystickInput.forward) moveDir.add(forward);
+      if (joystickInput.back) moveDir.sub(forward);
+      if (joystickInput.right) moveDir.add(right);
+      if (joystickInput.left) moveDir.sub(right);
+      
+      if (moveDir.length() > 0) {
+        moveDir.normalize();
+        playerGroup.position.addScaledVector(moveDir, speed * delta);
+        
+        // 移動方向を向く
+        const targetPos = playerGroup.position.clone().add(moveDir);
+        playerGroup.lookAt(targetPos.x, playerGroup.position.y, targetPos.z);
+      }
+      
+      // 地面衝突（簡易: y=0固定）
+      playerGroup.position.y = 0;
+    }
+    
+    // ============================================================
+    // nipplejsジョイスティック統合
+    // ============================================================
+    const joystickManager = nipplejs.create({
+      zone: document.getElementById('joystick-zone'),
+      mode: 'static',
+      position: { left: '50%', top: '50%' },
+      color: 'white', size: 120,
+    });
+    
+    joystickManager.on('move', (evt, data) => {
+      if (!data?.vector) return;
+      const threshold = 0.3;
+      joystickInput.x = data.vector.x;
+      joystickInput.y = data.vector.y;
+      joystickInput.forward = data.vector.y > threshold;
+      joystickInput.back = data.vector.y < -threshold;
+      joystickInput.right = data.vector.x > threshold;
+      joystickInput.left = data.vector.x < -threshold;
+    });
+    
+    joystickManager.on('end', () => {
+      Object.assign(joystickInput, { x:0, y:0, forward:false, back:false, left:false, right:false });
+    });
+    
+    // ============================================================
+    // カメラ回転（右側スワイプ）
+    // ============================================================
+    const TOUCH_SENSITIVITY = 0.005;
+    let lastTouchX = 0, lastTouchY = 0;
+    
+    canvas.addEventListener('touchstart', (e) => {
+      const touch = e.touches[0];
+      if (touch.clientX > window.innerWidth / 2) {
+        lastTouchX = touch.clientX;
+        lastTouchY = touch.clientY;
+      }
+    }, { passive: true });
+    
+    canvas.addEventListener('touchmove', (e) => {
+      const touch = e.touches[0];
+      if (touch.clientX > window.innerWidth / 2) {
+        const dx = touch.clientX - lastTouchX;
+        const dy = touch.clientY - lastTouchY;
+        
+        cameraYaw += dx * TOUCH_SENSITIVITY;
+        cameraPitch = Math.max(SPRING_ARM.MIN_PITCH, 
+                  Math.min(SPRING_ARM.MAX_PITCH, cameraPitch + dy * TOUCH_SENSITIVITY));
+        
+        lastTouchX = touch.clientX;
+        lastTouchY = touch.clientY;
+      }
+    }, { passive: true });
+    
+    // ============================================================
+    // ボタン操作（Pointer Events）
+    // ============================================================
+    document.getElementById('fire-btn').addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      console.log('🔫 FIRE!');
+    }, { passive: false });
+    
+    document.getElementById('reload-btn').addEventListener('click', () => {
+      console.log('🔄 RELOAD!');
+    });
+    
+    // ============================================================
+    // レスポンシブ対応
+    // ============================================================
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+    
+    // ============================================================
+    // FPSモニター
+    // ============================================================
+    let frameCount = 0, lastTime = performance.now();
+    const fpsDisplay = document.getElementById('fps-display');
+    
+    function checkFPS() {
+      const now = performance.now();
+      frameCount++;
+      if (now - lastTime >= 1000) {
+        fpsDisplay.textContent = `FPS: ${frameCount}`;
+        frameCount = 0;
+        lastTime = now;
+      }
+    }
+    
+    // ============================================================
+    // ゲームループ
+    // ============================================================
+    const clock = new THREE.Clock();
+    
+    function gameLoop() {
+      if (!STATE.isPlaying || STATE.isGameOver) return;
+      
+      const delta = Math.min(clock.getDelta(), 0.1); // 最大0.1秒
+      
+      updatePlayer(delta);
+      updateCamera(delta);
+      checkFPS();
+      
+      renderer.render(scene, camera);
+      requestAnimationFrame(gameLoop);
+    }
+    
+    // ============================================================
+    // スタート/リスタート処理
+    // ============================================================
+    function startGame() {
+      STATE.isPlaying = true;
+      STATE.isGameOver = false;
+      STATE.playerHealth = 100;
+      STATE.score = 0;
+      
+      playerGroup.position.set(0, 0, 0);
+      cameraYaw = 0;
+      cameraPitch = 0.3;
+      
+      document.getElementById('start-screen').style.display = 'none';
+      document.getElementById('game-over-screen').style.display = 'none';
+      
+      clock.start();
+      gameLoop();
+    }
+    
+    function gameOver() {
+      STATE.isGameOver = true;
+      document.getElementById('final-score').textContent = `Score: ${STATE.score}`;
+      document.getElementById('game-over-screen').style.display = 'flex';
+    }
+    
+    // ボタンイベント
+    document.getElementById('start-btn').addEventListener('click', startGame);
+    document.getElementById('restart-btn').addEventListener('click', startGame);
+    
+    console.log('✅ Browser TPS Phase 1 loaded!');
+    console.log('🕹️ Left Joystick = Move | 👆 Right Swipe = Look');
+  </script>
+</body>
+</html>
