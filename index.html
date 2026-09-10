@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>🎮 Browser TPS - Phase 1</title>
+  <title>🎮 Browser TPS - Phase 2</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { overflow: hidden; touch-action: none; background: #000; font-family: sans-serif; }
@@ -71,6 +71,30 @@
       text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
     }
     
+    /* 弾数表示 */
+    #ammo-display {
+      position: absolute; bottom: 90px; right: 30px; color: white;
+      font-size: 24px; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    }
+    
+    /* ヒットマーカー */
+    #hit-marker {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 30px; height: 30px; opacity: 0; transition: opacity 0.1s;
+    }
+    
+    #hit-marker::before, #hit-marker::after {
+      content: ''; position: absolute; background: white;
+    }
+    
+    #hit-marker::before {
+      width: 2px; height: 30px; left: 14px; top: 0;
+    }
+    
+    #hit-marker::after {
+      width: 30px; height: 2px; top: 14px; left: 0;
+    }
+    
     /* スタート画面 */
     #start-screen {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -109,13 +133,20 @@
       position: absolute; top: 50px; right: 15px; color: white;
       font-size: 12px; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
     }
+    
+    /* ウェーブ表示 */
+    #wave-display {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      color: white; font-size: 48px; font-weight: bold; opacity: 0;
+      text-shadow: 2px 2px 8px rgba(0,0,0,0.8); pointer-events: none;
+    }
   </style>
 </head>
 <body>
   <!-- スタート画面 -->
   <div id="start-screen">
     <h1>🎮 Browser TPS</h1>
-    <p>Phase 1: Basic Movement + Camera</p>
+    <p>Phase 2: Shooting System + Enemies</p>
     <p style="margin-top:20px; font-size:14px;">🕹️ Left Joystick = Move | 👆 Right Swipe = Look</p>
     <p style="font-size:14px;">🔫 Fire Button = Shoot | 🔄 Reload = R</p>
     <button id="start-btn">▶ START GAME</button>
@@ -139,6 +170,15 @@
       <div id="hp-container"><div id="hp-fill"></div></div>
       <div id="score-display">Score: 0</div>
     </div>
+    
+    <!-- 弾数表示 -->
+    <div id="ammo-display">30 / 30</div>
+    
+    <!-- ヒットマーカー -->
+    <div id="hit-marker"></div>
+    
+    <!-- ウェーブ表示 -->
+    <div id="wave-display"></div>
     
     <!-- FPS表示 -->
     <div id="fps-display">FPS: --</div>
@@ -414,15 +454,350 @@
     }, { passive: true });
     
     // ============================================================
+    // Phase 2: 射撃システム ★NEW!
+    // ============================================================
+    const WEAPON = {
+      AMMO_MAX: 30,
+      AMMO_CURRENT: 30,
+      FIRE_RATE: 0.15,       // 連射間隔（秒）
+      RECOIL_AMOUNT: 0.05,   // リコイル量
+      RECOVERY_SPEED: 2.0,   // リコイル回復速度
+      RELOAD_TIME: 2.0,      // リロード時間
+    };
+    
+    let lastFireTime = 0;
+    let recoilOffset = 0;
+    let isReloading = false;
+    let reloadTimer = null;
+    
+    // ヒットエフェクト用パーティクル配列
+    const hitEffects = [];
+    const muzzleFlashes = [];
+    const tracers = [];
+    
+    function shoot() {
+      if (isReloading || WEAPON.AMMO_CURRENT <= 0) return;
+      
+      const now = performance.now() / 1000;
+      if (now - lastFireTime < WEAPON.FIRE_RATE) return;
+      lastFireTime = now;
+      
+      WEAPON.AMMO_CURRENT--;
+      updateAmmoDisplay();
+      
+      // Hit Scan: カメラの前方へレイを飛ばす
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(new THREE.Vector2(0, 0), camera); // 画面中央
+      
+      // 敵との交差チェック
+      const enemyMeshes = STATE.enemies.map(e => e.mesh);
+      const intersects = raycaster.intersectObjects(enemyMeshes, true);
+      
+      if (intersects.length > 0 && intersects[0].distance < 100) {
+        // 命中！敵のHPを減少
+        const hitObject = intersects[0].object;
+        let enemy = STATE.enemies.find(e => e.mesh === hitObject || e.mesh.children.includes(hitObject));
+        if (enemy) {
+          enemy.takeDamage(25);
+          createHitEffect(intersects[0].point);
+          
+          // ヒットマーカー表示
+          showHitMarker();
+        }
+      }
+      
+      // リコイル（カメラを上にずらす）
+      recoilOffset += WEAPON.RECOIL_AMOUNT;
+      
+      // マズルフラッシュ
+      createMuzzleFlash();
+      
+      // プロジェクトイルの視覚エフェクト（簡易線）
+      const target = intersects.length > 0 ? intersects[0].point : raycaster.ray.at(50, new THREE.Vector3());
+      createTracer(target);
+    }
+    
+    function createHitEffect(position) {
+      // 命中位置にパーティクルを生成
+      const particleCount = 8;
+      const positions = new Float32Array(particleCount * 3);
+      const velocities = [];
+      
+      for (let i = 0; i < particleCount; i++) {
+        positions[i*3] = position.x;
+        positions[i*3+1] = position.y;
+        positions[i*3+2] = position.z;
+        
+        // ランダムな方向に飛散
+        velocities.push(new THREE.Vector3(
+          (Math.random() - 0.5) * 4,
+          Math.random() * 4,
+          (Math.random() - 0.5) * 4
+        ));
+      }
+      
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      
+      const mat = new THREE.PointsMaterial({ 
+        size: 0.2, 
+        color: 0xffaa44,
+        transparent: true,
+        opacity: 1
+      });
+      const particles = new THREE.Points(geo, mat);
+      scene.add(particles);
+      
+      // パーティクルとして管理
+      hitEffects.push({
+        mesh: particles,
+        velocities: velocities,
+        life: 0.3, // 秒
+        maxLife: 0.3
+      });
+    }
+    
+    function createMuzzleFlash() {
+      const flash = new THREE.PointLight(0xffaa44, 10, 8);
+      flash.position.copy(camera.position);
+      const forward = new THREE.Vector3();
+      camera.getWorldDirection(forward);
+      flash.position.addScaledVector(forward, -1);
+      scene.add(flash);
+      
+      muzzleFlashes.push({
+        light: flash,
+        life: 0.05 // 0.05秒で消える
+      });
+    }
+    
+    function createTracer(target) {
+      // カメラ位置から命中点へ線を描画（簡易トレーサー）
+      const points = [camera.position.clone(), target];
+      const geo = new THREE.BufferGeometry().setFromPoints(points);
+      const mat = new THREE.LineBasicMaterial({ 
+        color: 0xffff44, 
+        transparent: true, 
+        opacity: 0.6 
+      });
+      const line = new THREE.Line(geo, mat);
+      scene.add(line);
+      
+      tracers.push({
+        line: line,
+        life: 0.1 // 0.1秒で消える
+      });
+    }
+    
+    function showHitMarker() {
+      const hitMarker = document.getElementById('hit-marker');
+      hitMarker.style.opacity = '1';
+      setTimeout(() => {
+        hitMarker.style.opacity = '0';
+      }, 100);
+    }
+    
+    function reload() {
+      if (isReloading || WEAPON.AMMO_CURRENT === WEAPON.AMMO_MAX) return;
+      isReloading = true;
+      
+      // リロード中、HUDにアニメーション表示
+      const ammoDisplay = document.getElementById('ammo-display');
+      ammoDisplay.textContent = 'RELOADING...';
+      ammoDisplay.style.color = '#ffaa00';
+      
+      setTimeout(() => {
+        WEAPON.AMMO_CURRENT = WEAPON.AMMO_MAX;
+        isReloading = false;
+        updateAmmoDisplay();
+      }, WEAPON.RELOAD_TIME * 1000);
+    }
+    
+    function updateRecoil(delta) {
+      if (recoilOffset > 0) {
+        recoilOffset -= WEAPON.RECOVERY_SPEED * delta;
+        if (recoilOffset < 0) recoilOffset = 0;
+      }
+      
+      // リコイルをカメラpitchに加算
+      cameraPitch += recoilOffset;
+    }
+    
+    function updateAmmoDisplay() {
+      const ammoDisplay = document.getElementById('ammo-display');
+      if (!isReloading) {
+        ammoDisplay.textContent = `${WEAPON.AMMO_CURRENT} / ${WEAPON.AMMO_MAX}`;
+        ammoDisplay.style.color = WEAPON.AMMO_CURRENT <= 5 ? '#ff4444' : 'white';
+      }
+    }
+    
+    // ============================================================
+    // Phase 2: 敵AIシステム ★NEW!
+    // ============================================================
+    class Enemy {
+      constructor(pos, type='basic') {
+        this.health = type==='basic' ? 50 : 100;
+        this.maxHealth = this.health;
+        this.speed = type==='basic' ? 3 : 5;
+        this.damage = type==='basic' ? 10 : 20;
+        this.detectionRange = 20; 
+        this.attackRange = 3;
+        
+        const color = type==='basic' ? 0xe74c3c : 0x9b59b6;
+        const m = new THREE.Mesh(new THREE.CapsuleGeometry(0.4,1.2,4,8),
+          new THREE.MeshStandardMaterial({ color }));
+        m.position.copy(pos); 
+        scene.add(m); 
+        this.mesh = m;
+        this.state = 'patrol'; 
+        this.attackCooldown = 0;
+        
+        // HPバー（簡易版）
+        const hpBarGeo = new THREE.PlaneGeometry(1, 0.1);
+        const hpBarMat = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
+        this.hpBar = new THREE.Mesh(hpBarGeo, hpBarMat);
+        this.hpBar.position.y = 2.5;
+        m.add(this.hpBar);
+      }
+      
+      canSeePlayer() {
+        const d = this.mesh.position.distanceTo(playerGroup.position);
+        if (d > this.detectionRange) return false;
+        const toP = new THREE.Vector3().subVectors(playerGroup.position, this.mesh.position).normalize();
+        const fwd = new THREE.Vector3(); 
+        this.mesh.getWorldDirection(fwd); 
+        fwd.y=0; 
+        fwd.normalize();
+        return fwd.dot(toP) > 0.5;
+      }
+      
+      update(delta) {
+        this.attackCooldown -= delta;
+        const d = this.mesh.position.distanceTo(playerGroup.position);
+        
+        // HPバーの更新
+        if (this.hpBar) {
+          const hpRatio = Math.max(0, this.health / this.maxHealth);
+          this.hpBar.scale.x = hpRatio;
+          this.hpBar.material.color.setHex(hpRatio > 0.5 ? 0x00ff00 : hpRatio > 0.25 ? 0xffff00 : 0xff0000);
+        }
+        
+        if (this.state === 'patrol' && this.canSeePlayer()) {
+          this.state = 'chase';
+        } else if (this.state === 'chase') {
+          if (!this.canSeePlayer() && d > this.detectionRange*1.5) {
+            this.state = 'patrol';
+          } else if (d <= this.attackRange) {
+            this.state = 'attack';
+          } else {
+            const dir = new THREE.Vector3().subVectors(playerGroup.position, this.mesh.position).normalize();
+            dir.y=0; 
+            this.mesh.position.addScaledVector(dir, this.speed*delta);
+            this.mesh.lookAt(new THREE.Vector3(playerGroup.position.x, 0, playerGroup.position.z));
+          }
+        } else if (this.state === 'attack') {
+          if (d > this.attackRange*1.5) {
+            this.state = 'chase';
+          } else if (this.attackCooldown <= 0) {
+            STATE.playerHealth -= this.damage;
+            updateHPBar();
+            this.attackCooldown = 1.5;
+            
+            // プレイヤーが倒されたらゲームオーバー
+            if (STATE.playerHealth <= 0) {
+              gameOver();
+            }
+          }
+        }
+        
+        this.mesh.position.y = 0;
+      }
+      
+      takeDamage(amount) {
+        this.health -= amount;
+        this.mesh.material.emissive.setHex(0xffffff);
+        setTimeout(() => this.mesh.material.emissive.setHex(0x000000), 100);
+        
+        if (this.health <= 0) {
+          scene.remove(this.mesh);
+          const i = STATE.enemies.indexOf(this); 
+          if(i>-1) STATE.enemies.splice(i,1);
+          STATE.score += 100;
+          updateScoreDisplay();
+          
+          // 次のウェーブを生成（簡易版）
+          spawnWave(STATE.wave + 1);
+        }
+      }
+    }
+    
+    function spawnWave(waveNum) {
+      STATE.wave = waveNum;
+      
+      // ウェーブ表示
+      const waveDisplay = document.getElementById('wave-display');
+      waveDisplay.textContent = `WAVE ${waveNum}`;
+      waveDisplay.style.opacity = '1';
+      setTimeout(() => {
+        waveDisplay.style.opacity = '0';
+      }, 2000);
+      
+      // 敵を生成（ウェーブ数に応じて増加）
+      const enemyCount = Math.min(waveNum + 2, 8);
+      for (let i = 0; i < enemyCount; i++) {
+        const angle = (i / enemyCount) * Math.PI * 2;
+        const distance = 15 + Math.random() * 10;
+        const x = Math.cos(angle) * distance;
+        const z = Math.sin(angle) * distance;
+        
+        const type = waveNum >= 3 && Math.random() > 0.7 ? 'strong' : 'basic';
+        const enemy = new Enemy(new THREE.Vector3(x, 0, z), type);
+        STATE.enemies.push(enemy);
+      }
+    }
+    
+    function updateHPBar() {
+      const hpFill = document.getElementById('hp-fill');
+      const healthRatio = Math.max(0, STATE.playerHealth / STATE.maxHealth);
+      hpFill.style.width = (healthRatio * 100) + '%';
+      
+      // HPが低い場合は赤く点滅
+      if (healthRatio < 0.3) {
+        hpFill.style.background = '#ff0000';
+      } else {
+        hpFill.style.background = 'linear-gradient(to right, #e74c3c, #ff6b6b)';
+      }
+    }
+    
+    function updateScoreDisplay() {
+      document.getElementById('score-display').textContent = `Score: ${STATE.score}`;
+    }
+    
+    // ============================================================
     // ボタン操作（Pointer Events）
     // ============================================================
-    document.getElementById('fire-btn').addEventListener('pointerdown', (e) => {
+    let isFiring = false;
+    
+    const fireBtn = document.getElementById('fire-btn');
+    fireBtn.addEventListener('pointerdown', (e) => {
       e.preventDefault();
-      console.log('🔫 FIRE!');
+      isFiring = true;
+      shoot();
     }, { passive: false });
     
+    fireBtn.addEventListener('pointerup', (e) => {
+      isFiring = false;
+    });
+    
+    // 連射（マウスホールド時）
+    setInterval(() => {
+      if (isFiring && STATE.isPlaying && !STATE.isGameOver) {
+        shoot();
+      }
+    }, 100);
+    
     document.getElementById('reload-btn').addEventListener('click', () => {
-      console.log('🔄 RELOAD!');
+      reload();
     });
     
     // ============================================================
@@ -462,6 +837,67 @@
       
       updatePlayer(delta);
       updateCamera(delta);
+      updateRecoil(delta);
+      
+      // 敵の更新
+      for (const enemy of STATE.enemies) {
+        enemy.update(delta);
+      }
+      
+      // ヒットエフェクトの更新
+      for (let i = hitEffects.length - 1; i >= 0; i--) {
+        const effect = hitEffects[i];
+        effect.life -= delta;
+        
+        if (effect.life <= 0) {
+          scene.remove(effect.mesh);
+          hitEffects.splice(i, 1);
+          continue;
+        }
+        
+        // パーティクルの移動
+        const positions = effect.mesh.geometry.attributes.position.array;
+        for (let j = 0; j < effect.velocities.length; j++) {
+          positions[j*3] += effect.velocities[j].x * delta;
+          positions[j*3+1] += effect.velocities[j].y * delta;
+          positions[j*3+2] += effect.velocities[j].z * delta;
+          
+          // 重力
+          effect.velocities[j].y -= 9.8 * delta;
+        }
+        effect.mesh.geometry.attributes.position.needsUpdate = true;
+        
+        // フェードアウト
+        effect.mesh.material.opacity = effect.life / effect.maxLife;
+      }
+      
+      // マズルフラッシュの更新
+      for (let i = muzzleFlashes.length - 1; i >= 0; i--) {
+        const flash = muzzleFlashes[i];
+        flash.life -= delta;
+        
+        if (flash.life <= 0) {
+          scene.remove(flash.light);
+          muzzleFlashes.splice(i, 1);
+        } else {
+          // 点滅エフェクト
+          flash.light.intensity = flash.life / 0.05 * 10;
+        }
+      }
+      
+      // トレーサーの更新
+      for (let i = tracers.length - 1; i >= 0; i--) {
+        const tracer = tracers[i];
+        tracer.life -= delta;
+        
+        if (tracer.life <= 0) {
+          scene.remove(tracer.line);
+          tracers.splice(i, 1);
+        } else {
+          tracer.line.material.opacity = tracer.life / 0.1 * 0.6;
+        }
+      }
+      
       checkFPS();
       
       renderer.render(scene, camera);
@@ -476,15 +912,33 @@
       STATE.isGameOver = false;
       STATE.playerHealth = 100;
       STATE.score = 0;
+      STATE.wave = 1;
+      STATE.enemies = [];
+      
+      WEAPON.AMMO_CURRENT = WEAPON.AMMO_MAX;
+      isReloading = false;
       
       playerGroup.position.set(0, 0, 0);
       cameraYaw = 0;
       cameraPitch = 0.3;
       
+      // 既存の敵を削除
+      for (const enemy of STATE.enemies) {
+        scene.remove(enemy.mesh);
+      }
+      
+      updateHPBar();
+      updateScoreDisplay();
+      updateAmmoDisplay();
+      
       document.getElementById('start-screen').style.display = 'none';
       document.getElementById('game-over-screen').style.display = 'none';
       
       clock.start();
+      
+      // 最初のウェーブを生成
+      spawnWave(1);
+      
       gameLoop();
     }
     
@@ -498,8 +952,10 @@
     document.getElementById('start-btn').addEventListener('click', startGame);
     document.getElementById('restart-btn').addEventListener('click', startGame);
     
-    console.log('✅ Browser TPS Phase 1 loaded!');
+    console.log('✅ Browser TPS Phase 2 loaded!');
     console.log('🕹️ Left Joystick = Move | 👆 Right Swipe = Look');
+    console.log('🔫 Fire Button = Shoot | 🔄 Reload = R');
+    console.log('⚔️ Enemies: Wave system active!');
   </script>
 </body>
 </html>
