@@ -388,8 +388,11 @@
     }
     
     // ============================================================
-    // プレイヤー移動（カメラ基準の相対移動）
+    // プレイヤー移動（カメラ基準の相対移動）★滑らかな回転★
     // ============================================================
+    let playerRotationTarget = 0; // ターゲットの回転角
+    const ROTATION_SPEED = 8;     // 回転速度
+    
     function updatePlayer(delta) {
       const speed = 6;
       
@@ -414,9 +417,16 @@
         moveDir.normalize();
         playerGroup.position.addScaledVector(moveDir, speed * delta);
         
-        // 移動方向を向く
-        const targetPos = playerGroup.position.clone().add(moveDir);
-        playerGroup.lookAt(targetPos.x, playerGroup.position.y, targetPos.z);
+        // ★滑らかに回転（即座に向かない）★
+        const targetAngle = Math.atan2(moveDir.x, moveDir.z);
+        let angleDiff = targetAngle - playerRotationTarget;
+        
+        // 最短経路に補正（±π以内）
+        if (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+        if (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+        
+        playerRotationTarget += angleDiff * ROTATION_SPEED * delta;
+        playerGroup.rotation.y = playerRotationTarget;
       }
       
       // 地面衝突（簡易: y=0固定）
@@ -510,17 +520,17 @@
       WEAPON.AMMO_CURRENT--;
       updateAmmoDisplay();
       
-      // ★キャラクターの真正面から発射（カメラ基準ではない）★
+      // ★カメラの真正面から発射（地表と平行）★
       const forward = new THREE.Vector3();
-      playerGroup.getWorldDirection(forward);  // キャラクターの前方ベクトル
-      forward.y = 0;  // 地面に平行な方向
+      camera.getWorldDirection(forward);  // カメラの前方ベクトル
+      forward.y = 0;  // ★Y成分を0にして地表と平行に★
       forward.normalize();
       
       // 武器の位置から発射
       const gunWorldPos = new THREE.Vector3();
       gun.getWorldPosition(gunWorldPos);
       
-      // Hit Scan: キャラクターの真正面へレイを飛ばす
+      // Hit Scan: カメラの真正面へレイを飛ばす（Y=0平行）
       const raycaster = new THREE.Raycaster(gunWorldPos, forward);
       
       // 敵との交差チェック
