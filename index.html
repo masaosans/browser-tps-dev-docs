@@ -403,9 +403,10 @@
         const dx = touch.clientX - lastTouchX;
         const dy = touch.clientY - lastTouchY;
         
-        cameraYaw += dx * TOUCH_SENSITIVITY;
+        // Three.js球座標系ではスワイプ方向と逆符号が必要
+        cameraYaw -= dx * TOUCH_SENSITIVITY;
         cameraPitch = Math.max(SPRING_ARM.MIN_PITCH, 
-                  Math.min(SPRING_ARM.MAX_PITCH, cameraPitch + dy * TOUCH_SENSITIVITY));
+                  Math.min(SPRING_ARM.MAX_PITCH, cameraPitch - dy * TOUCH_SENSITIVITY));
         
         lastTouchX = touch.clientX;
         lastTouchY = touch.clientY;
