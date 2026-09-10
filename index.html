@@ -510,9 +510,18 @@
       WEAPON.AMMO_CURRENT--;
       updateAmmoDisplay();
       
-      // Hit Scan: カメラの前方へレイを飛ばす
-      const raycaster = new THREE.Raycaster();
-      raycaster.setFromCamera(new THREE.Vector2(0, 0), camera); // 画面中央
+      // ★キャラクターの真正面から発射（カメラ基準ではない）★
+      const forward = new THREE.Vector3();
+      playerGroup.getWorldDirection(forward);  // キャラクターの前方ベクトル
+      forward.y = 0;  // 地面に平行な方向
+      forward.normalize();
+      
+      // 武器の位置から発射
+      const gunWorldPos = new THREE.Vector3();
+      gun.getWorldPosition(gunWorldPos);
+      
+      // Hit Scan: キャラクターの真正面へレイを飛ばす
+      const raycaster = new THREE.Raycaster(gunWorldPos, forward);
       
       // 敵との交差チェック
       const enemyMeshes = STATE.enemies.map(e => e.mesh);
@@ -535,11 +544,11 @@
       recoilOffset += WEAPON.RECOIL_AMOUNT;
       
       // マズルフラッシュ
-      createMuzzleFlash();
+      createMuzzleFlash(gunWorldPos, forward);
       
       // プロジェクトイルの視覚エフェクト（簡易線）
-      const target = intersects.length > 0 ? intersects[0].point : raycaster.ray.at(50, new THREE.Vector3());
-      createTracer(target);
+      const target = intersects.length > 0 ? intersects[0].point : gunWorldPos.clone().add(forward.multiplyScalar(50));
+      createTracer(gunWorldPos, target);
     }
     
     function createHitEffect(position) {
@@ -582,12 +591,12 @@
       });
     }
     
-    function createMuzzleFlash() {
+    function createMuzzleFlash(position, direction) {
       const flash = new THREE.PointLight(0xffaa44, 10, 8);
-      flash.position.copy(camera.position);
-      const forward = new THREE.Vector3();
-      camera.getWorldDirection(forward);
-      flash.position.addScaledVector(forward, -1);
+      flash.position.copy(position);
+      if (direction) {
+        flash.position.addScaledVector(direction, -1);
+      }
       scene.add(flash);
       
       muzzleFlashes.push({
@@ -596,9 +605,9 @@
       });
     }
     
-    function createTracer(target) {
-      // カメラ位置から命中点へ線を描画（太く明るいトレーサー）
-      const points = [camera.position.clone(), target];
+    function createTracer(startPos, target) {
+      // 武器位置から命中点へ線を描画（太く明るいトレーサー）
+      const points = [startPos.clone(), target];
       const geo = new THREE.BufferGeometry().setFromPoints(points);
       
       // 太い線 + 明るい黄色 + 光るエフェクト
@@ -660,8 +669,8 @@
         if (recoilOffset < 0) recoilOffset = 0;
       }
       
-      // リコイルをカメラpitchに加算
-      cameraPitch += recoilOffset;
+      // ★リコイルを視覚効果としてカメラpositionに適用（pitchに加算しない）★
+      // cameraPitch += recoilOffset; // ← これだと毎フレームカメラの向きが変わっちゃう！
     }
     
     function updateAmmoDisplay() {
