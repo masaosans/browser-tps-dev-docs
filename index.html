@@ -6,7 +6,18 @@
   <title>🎮 Browser TPS - Phase 2</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { overflow: hidden; touch-action: none; background: #000; font-family: sans-serif; }
+    body { 
+      overflow: hidden; 
+      touch-action: none; 
+      background: #000; 
+      font-family: sans-serif;
+      /* ★文字選択防止（タッチ操作中のハイライト防止）★ */
+      -webkit-user-select: none;  /* Safari/Chrome */
+      -moz-user-select: none;     /* Firefox */
+      -ms-user-select: none;      /* IE/Edge */
+      user-select: none;          /* 標準 */
+      -webkit-tap-highlight-color: transparent;  /* タップ時のハイライト消し */
+    }
     
     /* ゲームキャンバス */
     #game-canvas { display: block; width: 100vw; height: 100vh; }
