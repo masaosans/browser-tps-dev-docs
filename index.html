@@ -309,7 +309,7 @@
     createObstacle(15, 10, 3, 5, 3, 0x696969);    // 高い柱
     
     // ============================================================
-    // プレイヤーキャラクター
+    // プレイヤーキャラクター ★顔付き★
     // ============================================================
     const playerGroup = new THREE.Group();
     
@@ -328,6 +328,20 @@
     head.position.y = 2.1;
     head.castShadow = true;
     playerGroup.add(head);
+    
+    // ★顔（前面に目をつけて方向を分かりやすく）★
+    // 左目
+    const eyeGeo = new THREE.SphereGeometry(0.06, 8, 8);
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+    
+    const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+    leftEye.position.set(-0.12, 2.15, 0.25); // 前面に配置
+    playerGroup.add(leftEye);
+    
+    // 右目
+    const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
+    rightEye.position.set(0.12, 2.15, 0.25);
+    playerGroup.add(rightEye);
     
     // 武器（右手に保持）
     const gunGeo = new THREE.BoxGeometry(0.15, 0.15, 0.6);
@@ -678,6 +692,18 @@
         this.mesh = m;
         this.state = 'patrol'; 
         this.attackCooldown = 0;
+        
+        // ★顔（前面に目をつけて方向を分かりやすく）★
+        const eyeGeo = new THREE.SphereGeometry(0.06, 8, 8);
+        const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // 敵は赤い目
+        
+        const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+        leftEye.position.set(-0.12, 1.35, 0.4); // CapsuleGeometryの前面
+        m.add(leftEye);
+        
+        const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
+        rightEye.position.set(0.12, 1.35, 0.4);
+        m.add(rightEye);
         
         // HPバー（簡易版）
         const hpBarGeo = new THREE.PlaneGeometry(1, 0.1);
