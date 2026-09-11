@@ -232,7 +232,7 @@
     // Spring Armパラメータ ★カメラ距離と仰角★
     const SPRING_ARM = {
       DISTANCE: 8, HEIGHT: 1.5, LERP_FACTOR: 0.1,
-      MIN_PITCH: -0.3, MAX_PITCH: 0.8, ZOOM_DISTANCE: 4, // ★下から見上げる〜上から見るまで★
+      MIN_PITCH: 0, MAX_PITCH: 0.8, ZOOM_DISTANCE: 4, // ★基準高度〜上から見るまで（下は見ない）★
     };
     
     let cameraYaw = 0, cameraPitch = 0; // ★cameraPitchは垂直方向のオフセット（ラジアン）★
