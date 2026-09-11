@@ -232,10 +232,10 @@
     // Spring Armパラメータ ★カメラ距離と仰角★
     const SPRING_ARM = {
       DISTANCE: 8, HEIGHT: 1.5, LERP_FACTOR: 0.1,
-      MIN_PITCH: -0.2, MAX_PITCH: 0.6, ZOOM_DISTANCE: 4, // ★水平〜やや上のみ
+      MIN_PITCH: -0.3, MAX_PITCH: 0.8, ZOOM_DISTANCE: 4, // ★下から見上げる〜上から見るまで★
     };
     
-    let cameraYaw = 0, cameraPitch = 0; // ★cameraPitchは仰角（ラジアン）★
+    let cameraYaw = 0, cameraPitch = 0; // ★cameraPitchは垂直方向のオフセット（ラジアン）★
     let currentZoom = SPRING_ARM.DISTANCE;
     let targetZoom = SPRING_ARM.DISTANCE;
     
@@ -360,10 +360,13 @@
       currentZoom += (targetZoom - currentZoom) * 0.1;
       
       // ★正しいTPSカメラ位置計算★
-      // カメラはプレイヤーから水平方向にDISTANCE離れ、HEIGHT高い位置に配置
+      // カメラはプレイヤーから水平方向にDISTANCE離れ、HEIGHT±cameraPitchで高さ調整
       const camX = playerGroup.position.x + Math.sin(cameraYaw) * currentZoom;
       const camZ = playerGroup.position.z + Math.cos(cameraYaw) * currentZoom;
-      const camY = playerGroup.position.y + SPRING_ARM.HEIGHT; // 常に一定の高さ
+      
+      // ★cameraPitchで高さを調整（0=基準高度、正=上から見る、負=下から見上げる）★
+      const heightOffset = Math.tan(cameraPitch) * currentZoom;
+      const camY = playerGroup.position.y + SPRING_ARM.HEIGHT + heightOffset;
       
       let targetPos = new THREE.Vector3(camX, camY, camZ);
       
