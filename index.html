@@ -363,7 +363,6 @@
       const spherical = new THREE.Spherical(currentZoom, cameraPitch, cameraYaw);
       const camOffset = new THREE.Vector3().setFromSpherical(spherical);
       const targetPos = playerGroup.position.clone().add(camOffset);
-      targetPos.y += SPRING_ARM.HEIGHT;
       
       // Raycastによる衝突回避（簡易版）
       const raycaster = new THREE.Raycaster(
