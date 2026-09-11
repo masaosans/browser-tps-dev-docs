@@ -117,6 +117,15 @@
     #start-screen h1 { font-size: 36px; margin-bottom: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
     #start-screen p { font-size: 16px; margin: 8px 0; opacity: 0.9; }
     
+    /* ★操作説明パネル★ */
+    .controls-panel {
+      background: rgba(255,255,255,0.1); border-radius: 10px; padding: 15px; margin: 15px 0;
+      max-width: 300px; text-align: left;
+    }
+    
+    .controls-panel h3 { font-size: 14px; margin-bottom: 10px; opacity: 0.8; }
+    .controls-panel p { font-size: 12px; margin: 5px 0; opacity: 0.9; }
+    
     #start-btn {
       margin-top: 30px; padding: 15px 40px; font-size: 20px; font-weight: bold;
       background: white; color: #764ba2; border: none; border-radius: 30px;
@@ -131,7 +140,16 @@
     }
     
     #game-over-screen h1 { font-size: 42px; margin-bottom: 20px; color: #e74c3c; }
-    #final-score { font-size: 28px; margin: 10px 0; }
+    
+    /* ★スコアボード★ */
+    .scoreboard {
+      background: rgba(255,255,255,0.1); border-radius: 10px; padding: 20px; margin: 15px 0;
+      min-width: 250px; text-align: center;
+    }
+    
+    .scoreboard h3 { font-size: 18px; margin-bottom: 15px; opacity: 0.8; }
+    .scoreboard p { font-size: 16px; margin: 8px 0; }
+    .scoreboard .highlight { color: #f1c40f; font-weight: bold; font-size: 24px; }
     
     #restart-btn {
       margin-top: 30px; padding: 15px 40px; font-size: 20px; font-weight: bold;
@@ -157,17 +175,32 @@
   <!-- スタート画面 -->
   <div id="start-screen">
     <h1>🎮 Browser TPS</h1>
-    <p>Phase 2: Shooting System + Enemies</p>
-    <p style="margin-top:20px; font-size:14px;">🕹️ Left Joystick = Move | 👆 Right Swipe = Look</p>
-    <p style="font-size:14px;">🔫 Fire Button = Shoot | 🔄 Reload = R</p>
+    <p>Phase 3: Enhanced UI + Game Loop</p>
+    
+    <!-- ★操作説明パネル★ -->
+    <div class="controls-panel">
+      <h3>🕹️ Controls</h3>
+      <p>👈 Left Joystick = Move</p>
+      <p>👆 Right Swipe = Look Around</p>
+      <p>🔫 FIRE Button = Shoot (Hold for Auto-fire)</p>
+      <p>🔄 R Button = Reload</p>
+    </div>
+    
     <button id="start-btn">▶ START GAME</button>
   </div>
   
   <!-- ゲームオーバー画面 -->
   <div id="game-over-screen">
     <h1>GAME OVER</h1>
-    <div id="final-score">Score: 0</div>
-    <p style="opacity:0.7;">Wave reached: 1</p>
+    
+    <!-- ★スコアボード★ -->
+    <div class="scoreboard">
+      <h3>📊 Final Score</h3>
+      <p class="highlight" id="final-score">Score: 0</p>
+      <p>Wave Reached: <span id="final-wave">1</span></p>
+      <p>Enemies Defeated: <span id="enemies-defeated">0</span></p>
+    </div>
+    
     <button id="restart-btn">🔄 RESTART</button>
   </div>
   
@@ -1028,7 +1061,12 @@
     
     function gameOver() {
       STATE.isGameOver = true;
+      
+      // ★スコアボードの更新★
       document.getElementById('final-score').textContent = `Score: ${STATE.score}`;
+      document.getElementById('final-wave').textContent = STATE.wave;
+      document.getElementById('enemies-defeated').textContent = Math.floor(STATE.score / 100);
+      
       document.getElementById('game-over-screen').style.display = 'flex';
     }
     
