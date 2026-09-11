@@ -229,13 +229,13 @@
       isPlaying: false, isGameOver: false,
     };
     
-    // Spring Armパラメータ ★カメラを遠くに★
+    // Spring Armパラメータ ★カメラ距離と仰角★
     const SPRING_ARM = {
-      DISTANCE: 12, HEIGHT: 1.5, LERP_FACTOR: 0.1, // ★DISTANCEを8→12に（遠く！）
+      DISTANCE: 8, HEIGHT: 1.5, LERP_FACTOR: 0.1,
       MIN_PITCH: -0.2, MAX_PITCH: 0.6, ZOOM_DISTANCE: 4, // ★水平〜やや上のみ
     };
     
-    let cameraYaw = 0, cameraPitch = 0.3;
+    let cameraYaw = 0, cameraPitch = 0; // ★cameraPitchは仰角（ラジアン）★
     let currentZoom = SPRING_ARM.DISTANCE;
     let targetZoom = SPRING_ARM.DISTANCE;
     
@@ -359,8 +359,14 @@
       // ズームの滑らかな遷移
       currentZoom += (targetZoom - currentZoom) * 0.1;
       
-      // カメラ目標位置を計算（球座標→直交座標）
-      const spherical = new THREE.Spherical(currentZoom, cameraPitch, cameraYaw);
+      // ★THREE.Spherical(radius, polarAngle, azimuthalAngle)★
+      // polarAngle=0は真上、Math.PI/2は水平面
+      // cameraPitch（仰角）をpolarAngleに変換: polar = PI/2 - pitch
+      const spherical = new THREE.Spherical(
+        currentZoom,                    // 距離
+        Math.PI / 2 - cameraPitch,     // polarAngle（真上からの角度）
+        cameraYaw                       // azimuthalAngle（水平回転）
+      );
       const camOffset = new THREE.Vector3().setFromSpherical(spherical);
       const targetPos = playerGroup.position.clone().add(camOffset);
       
