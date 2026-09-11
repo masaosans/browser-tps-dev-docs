@@ -359,16 +359,13 @@
       // ズームの滑らかな遷移
       currentZoom += (targetZoom - currentZoom) * 0.1;
       
-      // ★THREE.Spherical(radius, polarAngle, azimuthalAngle)★
-      // polarAngle=0は真上、Math.PI/2は水平面
-      // cameraPitch（仰角）をpolarAngleに変換: polar = PI/2 - pitch
-      const spherical = new THREE.Spherical(
-        currentZoom,                    // 距離
-        Math.PI / 2 - cameraPitch,     // polarAngle（真上からの角度）
-        cameraYaw                       // azimuthalAngle（水平回転）
-      );
-      const camOffset = new THREE.Vector3().setFromSpherical(spherical);
-      const targetPos = playerGroup.position.clone().add(camOffset);
+      // ★正しいTPSカメラ位置計算★
+      // カメラはプレイヤーから水平方向にDISTANCE離れ、HEIGHT高い位置に配置
+      const camX = playerGroup.position.x + Math.sin(cameraYaw) * currentZoom;
+      const camZ = playerGroup.position.z + Math.cos(cameraYaw) * currentZoom;
+      const camY = playerGroup.position.y + SPRING_ARM.HEIGHT; // 常に一定の高さ
+      
+      let targetPos = new THREE.Vector3(camX, camY, camZ);
       
       // Raycastによる衝突回避（簡易版）
       const raycaster = new THREE.Raycaster(
