@@ -520,18 +520,21 @@
       WEAPON.AMMO_CURRENT--;
       updateAmmoDisplay();
       
-      // ★カメラの真正面から発射（地表と平行）★
+      // ★カメラの真正面から発射（地表と平行 + 遠距離用少し下向き）★
       const forward = new THREE.Vector3();
       camera.getWorldDirection(forward);  // カメラの前方ベクトル
-      forward.y = 0;  // ★Y成分を0にして地表と平行に★
+      
+      // ★遠くの敵にも当たるよう、弾の高さを敵の中心質量（y≈0.5）に合わせる★
+      // カメラが上を向いていても、地表とほぼ平行＋少し下向きにする
+      forward.y = -0.08;  // 約4.6度下向き → 遠距離でも敵の胴体に当たる！
       forward.normalize();
       
-      // 武器の位置から発射
+      // 武器の位置から発射（y≈1.4m）
       const gunWorldPos = new THREE.Vector3();
       gun.getWorldPosition(gunWorldPos);
       
-      // Hit Scan: カメラの真正面へレイを飛ばす（Y=0平行）
-      const raycaster = new THREE.Raycaster(gunWorldPos, forward);
+      // ★Raycaster: near=0.5, far=100 で近い障害物・遠距離を最適化★
+      const raycaster = new THREE.Raycaster(gunWorldPos, forward, 0.5, 100);
       
       // 敵との交差チェック
       const enemyMeshes = STATE.enemies.map(e => e.mesh);
