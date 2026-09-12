@@ -514,9 +514,18 @@
       
       let targetPos = new THREE.Vector3(camX, baseCamY, camZ);
       
-      // ★障害物のみをRaycastでチェック（敵は除外！）★
+      // ★敵の子メッシュ（HPバーなど）も正しく除外★
+      function isEnemyObject(obj) {
+        let current = obj;
+        while (current) {
+          if (STATE.enemies.some(e => e.mesh === current)) return true;
+          current = current.parent;
+        }
+        return false;
+      }
+      
       const obstacles = scene.children.filter(obj => 
-        obj !== playerGroup && !STATE.enemies.some(e => e.mesh === obj)
+        obj !== playerGroup && !isEnemyObject(obj)
       );
       
       const raycaster = new THREE.Raycaster(targetPos.clone(), 
@@ -526,14 +535,12 @@
       
       for (const hit of intersects) {
         if (hit.distance < currentZoom && hit.point.y > playerGroup.position.y) {
-          // ★高さ上限: 基準高度+3mまで（見上げるのを防止）★
-          const maxCamY = playerGroup.position.y + SPRING_ARM.HEIGHT + 3;
+          // ★高さ上限: 基準高度+2mまで（見上げるのを防止）★
+          const maxCamY = playerGroup.position.y + SPRING_ARM.HEIGHT + 2;
           const rayPoint = raycaster.ray.at(hit.distance - 0.5, new THREE.Vector3());
           
           if (rayPoint.y <= maxCamY) {
             finalCamPos.copy(rayPoint);
-          } else {
-            // 高さ上限超え → そのまま（跳ね上げ防止）
           }
           break;
         }
