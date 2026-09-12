@@ -512,51 +512,9 @@
       const heightOffset = Math.tan(cameraPitch) * currentZoom;
       const baseCamY = playerGroup.position.y + SPRING_ARM.HEIGHT + heightOffset;
       
-      let targetPos = new THREE.Vector3(camX, baseCamY, camZ);
-      
-      // ★敵の子メッシュ（HPバーなど）も正しく除外★
-      function isEnemyObject(obj) {
-        let current = obj;
-        while (current) {
-          if (STATE.enemies.some(e => e.mesh === current)) return true;
-          current = current.parent;
-        }
-        return false;
-      }
-      
-      const obstacles = scene.children.filter(obj => 
-        obj !== playerGroup && !isEnemyObject(obj)
-      );
-      
-      // ★Raycast: カメラ→プレイヤー方向（衝突回避用）★
-      // 範囲を currentZoom * 1.5 に拡張（障害物を確実に検知）
-      const raycaster = new THREE.Raycaster(targetPos.clone(), 
-        playerGroup.position.clone().sub(targetPos).normalize(), 0, currentZoom * 1.5);
-      const intersects = raycaster.intersectObjects(obstacles, true);
-      
-      // ★最終カメラ位置を計算（障害物チェック付き）★
-      let finalCamPos = targetPos;
-      
-      if (intersects.length > 0) {
-        for (const hit of intersects) {
-          const distToPlayer = hit.distance;
-          
-          // ★最小距離: DISTANCEの80%までしか寄らない（ズーム防止）★
-          const minDistance = SPRING_ARM.DISTANCE * 0.8;
-          
-          if (distToPlayer < currentZoom && distToPlayer > minDistance) {
-            // 障害物がカメラとプレイヤーの間にある → カメラを障害物の手前に配置
-            const rayPoint = raycaster.ray.at(distToPlayer - 0.3, new THREE.Vector3());
-            
-            // ★高さ制限: 基準高度+2mまで★
-            const maxCamY = playerGroup.position.y + SPRING_ARM.HEIGHT + 2;
-            if (rayPoint.y <= maxCamY) {
-              finalCamPos.copy(rayPoint);
-            }
-          }
-          break; // 最初の障害物のみ対応
-        }
-      }
+      // ★障害物チェックを削除（TPSでは簡潔に）★
+      // 障害物が視界を遮っても、カメラが跳ね上がるよりマシ
+      let finalCamPos = new THREE.Vector3(camX, baseCamY, camZ);
       
       camera.position.lerp(finalCamPos, SPRING_ARM.LERP_FACTOR);
       camera.lookAt(playerGroup.position.clone().add(new THREE.Vector3(0, 1.5, 0)));
