@@ -3,181 +3,50 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>🎮 Browser TPS - Phase 2</title>
+  <title>🎮 Browser TPS - Phase 4 Enhanced</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { 
-      overflow: hidden; 
-      touch-action: none; 
-      background: #000; 
-      font-family: sans-serif;
-      /* ★文字選択防止（タッチ操作中のハイライト防止）★ */
-      -webkit-user-select: none;  /* Safari/Chrome */
-      -moz-user-select: none;     /* Firefox */
-      -ms-user-select: none;      /* IE/Edge */
-      user-select: none;          /* 標準 */
-      -webkit-tap-highlight-color: transparent;  /* タップ時のハイライト消し */
+      overflow: hidden; touch-action: none; background: #000; font-family: sans-serif;
+      -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
-    
-    /* ゲームキャンバス */
     #game-canvas { display: block; width: 100vw; height: 100vh; }
-    
-    /* UIオーバーレイ層 */
-    #ui-layer {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      pointer-events: none; z-index: 10;
-    }
-    
-    /* ジョイスティックゾーン（左下） */
-    #joystick-zone {
-      position: absolute; bottom: 20px; left: 20px;
-      width: 150px; height: 150px; pointer-events: auto;
-    }
-    
-    /* 射撃ボタン（右下 — reload/coverの上に配置） */
-    #fire-btn {
-      position: absolute; bottom: 150px; right: 30px;
-      width: 80px; height: 80px; border-radius: 50%;
-      background: rgba(255,68,68,0.8); border: 4px solid white;
-      color: white; font-size: 16px; font-weight: bold;
-      pointer-events: auto; cursor: pointer;
-    }
-    
-    /* リロードボタン（右下） */
-    #reload-btn {
-      position: absolute; bottom: 20px; right: 30px;
-      width: 55px; height: 55px; border-radius: 50%;
-      background: rgba(68,136,255,0.7); border: 2px solid white;
-      color: white; font-size: 11px; font-weight: bold;
-      pointer-events: auto; cursor: pointer;
-    }
-    
-    /* カバボタン（右下） */
-    #cover-btn {
-      position: absolute; bottom: 80px; right: 30px;
-      width: 55px; height: 55px; border-radius: 50%;
-      background: rgba(68,255,68,0.7); border: 2px solid white;
-      color: white; font-size: 11px; font-weight: bold;
-      pointer-events: auto; cursor: pointer;
-    }
-    
-    /* HUD（上部） */
-    #hud {
-      position: absolute; top: 15px; left: 15px; right: 15px;
-      display: flex; justify-content: space-between; align-items: center;
-    }
-    
-    #hp-container {
-      width: 200px; height: 24px; background: rgba(0,0,0,0.6);
-      border: 2px solid #fff; border-radius: 4px; overflow: hidden;
-    }
-    
-    #hp-fill {
-      height: 100%; background: linear-gradient(to right, #e74c3c, #ff6b6b);
-      width: 100%; transition: width 0.3s;
-    }
-    
-    #score-display {
-      color: white; font-size: 20px; font-weight: bold;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-    }
-    
-    /* 弾数表示 */
-    #ammo-display {
-      position: absolute; bottom: 90px; right: 30px; color: white;
-      font-size: 24px; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-    }
-    
-    /* ヒットマーカー */
-    #hit-marker {
-      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-      width: 30px; height: 30px; opacity: 0; transition: opacity 0.1s;
-    }
-    
-    #hit-marker::before, #hit-marker::after {
-      content: ''; position: absolute; background: white;
-    }
-    
-    #hit-marker::before {
-      width: 2px; height: 30px; left: 14px; top: 0;
-    }
-    
-    #hit-marker::after {
-      width: 30px; height: 2px; top: 14px; left: 0;
-    }
-    
-    /* スタート画面 */
-    #start-screen {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      z-index: 100; color: white;
-    }
-    
+    #ui-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+    #joystick-zone { position: absolute; bottom: 20px; left: 20px; width: 150px; height: 150px; pointer-events: auto; }
+    #fire-btn { position: absolute; bottom: 150px; right: 30px; width: 80px; height: 80px; border-radius: 50%; background: rgba(255,68,68,0.8); border: 4px solid white; color: white; font-size: 16px; font-weight: bold; pointer-events: auto; cursor: pointer; }
+    #reload-btn { position: absolute; bottom: 20px; right: 30px; width: 55px; height: 55px; border-radius: 50%; background: rgba(68,136,255,0.7); border: 2px solid white; color: white; font-size: 11px; font-weight: bold; pointer-events: auto; cursor: pointer; }
+    #cover-btn { position: absolute; bottom: 80px; right: 30px; width: 55px; height: 55px; border-radius: 50%; background: rgba(68,255,68,0.7); border: 2px solid white; color: white; font-size: 11px; font-weight: bold; pointer-events: auto; cursor: pointer; }
+    #hud { position: absolute; top: 15px; left: 15px; right: 15px; display: flex; justify-content: space-between; align-items: center; }
+    #hp-container { width: 200px; height: 24px; background: rgba(0,0,0,0.6); border: 2px solid #fff; border-radius: 4px; overflow: hidden; }
+    #hp-fill { height: 100%; background: linear-gradient(to right, #e74c3c, #ff6b6b); width: 100%; transition: width 0.3s; }
+    #score-display { color: white; font-size: 20px; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); }
+    #ammo-display { position: absolute; bottom: 90px; right: 30px; color: white; font-size: 24px; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); }
+    #hit-marker { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 30px; height: 30px; opacity: 0; transition: opacity 0.1s; }
+    #hit-marker::before, #hit-marker::after { content: ''; position: absolute; background: white; }
+    #hit-marker::before { width: 2px; height: 30px; left: 14px; top: 0; }
+    #hit-marker::after { width: 30px; height: 2px; top: 14px; left: 0; }
+    #start-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; color: white; }
     #start-screen h1 { font-size: 36px; margin-bottom: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
-    #start-screen p { font-size: 16px; margin: 8px 0; opacity: 0.9; }
-    
-    /* ★操作説明パネル★ */
-    .controls-panel {
-      background: rgba(255,255,255,0.1); border-radius: 10px; padding: 15px; margin: 15px 0;
-      max-width: 300px; text-align: left;
-    }
-    
+    .controls-panel { background: rgba(255,255,255,0.1); border-radius: 10px; padding: 15px; margin: 15px 0; max-width: 300px; text-align: left; }
     .controls-panel h3 { font-size: 14px; margin-bottom: 10px; opacity: 0.8; }
     .controls-panel p { font-size: 12px; margin: 5px 0; opacity: 0.9; }
-    
-    #start-btn {
-      margin-top: 30px; padding: 15px 40px; font-size: 20px; font-weight: bold;
-      background: white; color: #764ba2; border: none; border-radius: 30px;
-      cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    }
-    
-    /* ゲームオーバー画面 */
-    #game-over-screen {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.85); display: none; flex-direction: column;
-      align-items: center; justify-content: center; z-index: 100; color: white;
-    }
-    
+    #start-btn { margin-top: 30px; padding: 15px 40px; font-size: 20px; font-weight: bold; background: white; color: #764ba2; border: none; border-radius: 30px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+    #game-over-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 100; color: white; }
     #game-over-screen h1 { font-size: 42px; margin-bottom: 20px; color: #e74c3c; }
-    
-    /* ★スコアボード★ */
-    .scoreboard {
-      background: rgba(255,255,255,0.1); border-radius: 10px; padding: 20px; margin: 15px 0;
-      min-width: 250px; text-align: center;
-    }
-    
+    .scoreboard { background: rgba(255,255,255,0.1); border-radius: 10px; padding: 20px; margin: 15px 0; min-width: 250px; text-align: center; }
     .scoreboard h3 { font-size: 18px; margin-bottom: 15px; opacity: 0.8; }
     .scoreboard p { font-size: 16px; margin: 8px 0; }
     .scoreboard .highlight { color: #f1c40f; font-weight: bold; font-size: 24px; }
-    
-    #restart-btn {
-      margin-top: 30px; padding: 15px 40px; font-size: 20px; font-weight: bold;
-      background: #e74c3c; color: white; border: none; border-radius: 30px;
-      cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    }
-    
-    /* FPS表示 */
-    #fps-display {
-      position: absolute; top: 50px; right: 15px; color: white;
-      font-size: 12px; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-    }
-    
-    /* ウェーブ表示 */
-    #wave-display {
-      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-      color: white; font-size: 48px; font-weight: bold; opacity: 0;
-      text-shadow: 2px 2px 8px rgba(0,0,0,0.8); pointer-events: none;
-    }
+    #restart-btn { margin-top: 30px; padding: 15px 40px; font-size: 20px; font-weight: bold; background: #e74c3c; color: white; border: none; border-radius: 30px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+    #fps-display { position: absolute; top: 50px; right: 15px; color: white; font-size: 12px; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); }
+    #wave-display { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 48px; font-weight: bold; opacity: 0; text-shadow: 2px 2px 8px rgba(0,0,0,0.8); pointer-events: none; }
   </style>
 </head>
 <body>
-  <!-- スタート画面 -->
   <div id="start-screen">
-    <h1>🎮 Browser TPS</h1>
-    <p>Phase 3: Enhanced UI + Game Loop</p>
-    
-    <!-- ★操作説明パネル★ -->
+    <h1>🎮 Browser TPS Enhanced</h1>
+    <p>Phase 4: Terrain + PBR Characters + Monsters</p>
     <div class="controls-panel">
       <h3>🕹️ Controls</h3>
       <p>👈 Left Joystick = Move</p>
@@ -185,601 +54,394 @@
       <p>🔫 FIRE Button = Shoot (Hold for Auto-fire)</p>
       <p>🔄 R Button = Reload</p>
     </div>
-    
     <button id="start-btn">▶ START GAME</button>
   </div>
   
-  <!-- ゲームオーバー画面 -->
   <div id="game-over-screen">
     <h1>GAME OVER</h1>
-    
-    <!-- ★スコアボード★ -->
     <div class="scoreboard">
       <h3>📊 Final Score</h3>
       <p class="highlight" id="final-score">Score: 0</p>
       <p>Wave Reached: <span id="final-wave">1</span></p>
       <p>Enemies Defeated: <span id="enemies-defeated">0</span></p>
     </div>
-    
     <button id="restart-btn">🔄 RESTART</button>
   </div>
   
-  <!-- ゲームキャンバス -->
   <canvas id="game-canvas"></canvas>
   
-  <!-- UIオーバーレイ -->
   <div id="ui-layer">
-    <!-- HUD -->
-    <div id="hud">
-      <div id="hp-container"><div id="hp-fill"></div></div>
-      <div id="score-display">Score: 0</div>
-    </div>
-    
-    <!-- 弾数表示 -->
+    <div id="hud"><div id="hp-container"><div id="hp-fill"></div></div><div id="score-display">Score: 0</div></div>
     <div id="ammo-display">30 / 30</div>
-    
-    <!-- ヒットマーカー -->
     <div id="hit-marker"></div>
-    
-    <!-- ウェーブ表示 -->
     <div id="wave-display"></div>
-    
-    <!-- FPS表示 -->
     <div id="fps-display">FPS: --</div>
-    
-    <!-- ジョイスティックゾーン -->
     <div id="joystick-zone"></div>
-    
-    <!-- ボタン類 -->
     <button id="fire-btn">🔫 FIRE</button>
     <button id="reload-btn">R</button>
     <button id="cover-btn">COVER</button>
   </div>
   
-  <!-- nipplejs CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
-  
-  <!-- Three.js importmap -->
   <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/"
-    }
-  }
+  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js" } }
   </script>
   
-  <!-- ゲーム本体 -->
   <script type="module">
     import * as THREE from 'three';
-    
+
     // ============================================================
     // ゲーム状態
     // ============================================================
-    const STATE = {
-      playerHealth: 100, maxHealth: 100,
-      score: 0, wave: 1, enemies: [],
-      isPlaying: false, isGameOver: false,
-    };
+    const STATE = { playerHealth: 100, maxHealth: 100, score: 0, wave: 1, enemies: [], isPlaying: false, isGameOver: false };
     
-    // Spring Armパラメータ ★カメラ距離と仰角★
-    const SPRING_ARM = {
-      DISTANCE: 8, HEIGHT: 1.5, LERP_FACTOR: 0.1,
-      MIN_PITCH: 0, MAX_PITCH: 0.8, ZOOM_DISTANCE: 4, // ★基準高度〜上から見るまで（下は見ない）★
-    };
-    
-    let cameraYaw = 0, cameraPitch = 0; // ★cameraPitchは垂直方向のオフセット（ラジアン）★
-    let currentZoom = SPRING_ARM.DISTANCE;
-    let targetZoom = SPRING_ARM.DISTANCE;
-    
-    // ジョイスティック入力
+    const SPRING_ARM = { DISTANCE: 8, HEIGHT: 1.5, LERP_FACTOR: 0.1, MIN_PITCH: 0, MAX_PITCH: 0.8, ZOOM_DISTANCE: 4 };
+    let cameraYaw = 0, cameraPitch = 0;
+    let currentZoom = SPRING_ARM.DISTANCE, targetZoom = SPRING_ARM.DISTANCE;
     const joystickInput = { x: 0, y: 0, forward: false, back: false, left: false, right: false };
-    
+
     // ============================================================
-    // Three.jsシーン初期化（モバイル最適化）
+    // Three.jsシーン初期化
     // ============================================================
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    
     const canvas = document.getElementById('game-canvas');
-    const renderer = new THREE.WebGLRenderer({ 
-      canvas, antialias: !isMobile, alpha: false 
-    });
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: !isMobile });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = isMobile ? THREE.BasicShadowMap : THREE.PCFSoftShadowMap;
-    
+
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x87CEEB); // 空の色（青）
-    scene.fog = new THREE.Fog(0x87CEEB, 20, 100); // フォグで奥をぼかす
-    
-    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
-    
-    // ライティング
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.background = new THREE.Color(0x87CEEB);
+    scene.fog = new THREE.FogExp2(0x87CEEB, 0.008); // より自然なフォグ
+
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 500);
+
+    // ★PBRライティング強化★
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
     scene.add(ambientLight);
     
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(10, 20, 10);
+    const hemiLight = new THREE.HemisphereLight(0x87CEEB, 0x4a7c59, 0.6); // 空と地面の色
+    scene.add(hemiLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xfff5e6, 1.2);
+    directionalLight.position.set(30, 50, 20);
     directionalLight.castShadow = true;
-    directionalLight.shadow.mapSize.width = 1024;
-    directionalLight.shadow.mapSize.height = 1024;
+    directionalLight.shadow.mapSize.width = 2048;
+    directionalLight.shadow.mapSize.height = 2048;
+    directionalLight.shadow.camera.near = 0.5;
+    directionalLight.shadow.camera.far = 150;
+    directionalLight.shadow.camera.left = -60;
+    directionalLight.shadow.camera.right = 60;
+    directionalLight.shadow.camera.top = 60;
+    directionalLight.shadow.camera.bottom = -60;
     scene.add(directionalLight);
-    
+
     // ============================================================
-    // 地面と障害物
+    // ★地形生成（Perlin Noise風）★
     // ============================================================
-    // 地面
-    const groundGeo = new THREE.PlaneGeometry(100, 100);
-    const groundMat = new THREE.MeshStandardMaterial({ 
-      color: 0x4a7c59, roughness: 0.8 
-    });
-    const ground = new THREE.Mesh(groundGeo, groundMat);
-    ground.rotation.x = -Math.PI / 2;
-    ground.receiveShadow = true;
-    scene.add(ground);
+    const TERRAIN_SIZE = 200;
+    const TERRAIN_SEGMENTS = 80;
+    const MAX_HEIGHT = 4;
     
-    // グリッドヘルパー（視覚的補助）
-    const gridHelper = new THREE.GridHelper(100, 50, 0x3a6c49, 0x3a6c49);
-    scene.add(gridHelper);
-    
-    // 障害物（箱）
-    function createObstacle(x, z, width, height, depth, color) {
-      const geo = new THREE.BoxGeometry(width, height, depth);
-      const mat = new THREE.MeshStandardMaterial({ color });
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.position.set(x, height / 2, z);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      scene.add(mesh);
-      return mesh;
+    function getTerrainHeight(x, z) {
+      const n1 = Math.sin(x * 0.05) * Math.cos(z * 0.05) * 0.5;
+      const n2 = Math.sin(x * 0.15 + 1.3) * Math.cos(z * 0.12 + 0.7) * 0.25;
+      const n3 = Math.sin(x * 0.3 + z * 0.2) * 0.1;
+      return (n1 + n2 + n3) * MAX_HEIGHT;
     }
-    
-    // いくつかの障害物を配置
-    createObstacle(-10, -10, 3, 4, 3, 0x8B4513); // 茶色の箱
-    createObstacle(10, -15, 2, 3, 2, 0x696969);   // グレーの箱
-    createObstacle(-15, 5, 4, 2, 4, 0x8B4513);    // 大きな箱
-    createObstacle(15, 10, 3, 5, 3, 0x696969);    // 高い柱
-    
+
+    function createTerrain() {
+      const geo = new THREE.PlaneGeometry(TERRAIN_SIZE, TERRAIN_SIZE, TERRAIN_SEGMENTS, TERRAIN_SEGMENTS);
+      geo.rotateX(-Math.PI / 2);
+      
+      const positions = geo.attributes.position;
+      const colors = [];
+      
+      for (let i = 0; i < positions.count; i++) {
+        const x = positions.getX(i);
+        const z = positions.getZ(i);
+        const y = getTerrainHeight(x, z);
+        positions.setY(i, y);
+        
+        // Biome Coloring（高さベース）
+        let color;
+        if (y < -1.5) {
+          color = new THREE.Color(0x4682B4); // 水（青）
+        } else if (y < 0) {
+          color = new THREE.Color(0xD2B48C); // 砂（ベージュ）
+        } else if (y < 1.5) {
+          color = new THREE.Color(0x4a7c59); // 草（緑）
+        } else if (y < 3) {
+          color = new THREE.Color(0x8B4513); // 岩（茶）
+        } else {
+          color = new THREE.Color(0xFFFFFF); // 雪（白）
+        }
+        colors.push(color.r, color.g, color.b);
+      }
+      
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+      geo.computeVertexNormals();
+      
+      const mat = new THREE.MeshStandardMaterial({ 
+        vertexColors: true, roughness: 0.9, metalness: 0.1 
+      });
+      
+      const terrain = new THREE.Mesh(geo, mat);
+      terrain.receiveShadow = true;
+      scene.add(terrain);
+      return terrain;
+    }
+
+    const terrainMesh = createTerrain();
+
     // ============================================================
-    // プレイヤーキャラクター ★顔付き★
+    // ★草フィールド（InstancedMesh）★
+    // ============================================================
+    function createGrassField() {
+      const count = 3000;
+      const grassGeo = new THREE.PlaneGeometry(0.15, 0.6);
+      grassGeo.translate(0, 0.3, 0);
+      
+      const grassMat = new THREE.MeshStandardMaterial({ 
+        color: 0x4a7c59, roughness: 0.8, side: THREE.DoubleSide 
+      });
+      
+      const instancedMesh = new THREE.InstancedMesh(grassGeo, grassMat, count);
+      const matrix = new THREE.Matrix4();
+      let idx = 0;
+      
+      for (let i = 0; i < count && idx < count; i++) {
+        const x = (Math.random() - 0.5) * TERRAIN_SIZE * 0.8;
+        const z = (Math.random() - 0.5) * TERRAIN_SIZE * 0.8;
+        const y = getTerrainHeight(x, z);
+        
+        if (y > 1.5) continue; // 高い場所はスキップ
+        
+        matrix.setPosition(x, y, z);
+        const rot = new THREE.Euler(0, Math.random() * Math.PI * 2, (Math.random() - 0.5) * 0.3);
+        matrix.makeRotationFromEuler(rot);
+        instancedMesh.setMatrixAt(idx++, matrix);
+      }
+      
+      instancedMesh.count = idx;
+      scene.add(instancedMesh);
+    }
+
+    createGrassField();
+
+    // ============================================================
+    // ★岩（PBR）★
+    // ============================================================
+    function createRock(x, z) {
+      const size = 0.5 + Math.random() * 1.5;
+      const geo = new THREE.IcosahedronGeometry(size, 2);
+      
+      const positions = geo.attributes.position;
+      for (let i = 0; i < positions.count; i++) {
+        const x = positions.getX(i), y = positions.getY(i), z = positions.getZ(i);
+        const noise = Math.random() * 0.3;
+        positions.setXYZ(i, x + (Math.random()-0.5)*noise, y + (Math.random()-0.5)*noise, z + (Math.random()-0.5)*noise);
+      }
+      geo.computeVertexNormals();
+      
+      const mat = new THREE.MeshStandardMaterial({ 
+        color: 0x8B4513, roughness: 0.9, metalness: 0.1 
+      });
+      
+      const rock = new THREE.Mesh(geo, mat);
+      const y = getTerrainHeight(x, z);
+      rock.position.set(x, y + size*0.3, z);
+      rock.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+      rock.castShadow = true;
+      rock.receiveShadow = true;
+      scene.add(rock);
+    }
+
+    for (let i = 0; i < 30; i++) {
+      createRock((Math.random()-0.5)*100, (Math.random()-0.5)*100);
+    }
+
+    // ============================================================
+    // ★建物（PBR）★
+    // ============================================================
+    function createBuilding(x, z) {
+      const building = new THREE.Group();
+      
+      // 本体
+      const bodyGeo = new THREE.BoxGeometry(6, 8, 6);
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0xF5F5DC, roughness: 0.7, metalness: 0.1 });
+      const body = new THREE.Mesh(bodyGeo, bodyMat);
+      body.position.y = 4;
+      body.castShadow = true;
+      building.add(body);
+      
+      // 窓（ガラス）
+      for (let i = -2; i <= 2; i += 2) {
+        const winGeo = new THREE.PlaneGeometry(1, 1.5);
+        const winMat = new THREE.MeshStandardMaterial({ color: 0x87CEEB, roughness: 0.1, metalness: 0.9 });
+        
+        const leftWin = new THREE.Mesh(winGeo, winMat);
+        leftWin.position.set(-3.05, i + 4, 0);
+        leftWin.rotation.y = -Math.PI/2;
+        building.add(leftWin);
+        
+        const rightWin = new THREE.Mesh(winGeo, winMat);
+        rightWin.position.set(3.05, i + 4, 0);
+        rightWin.rotation.y = Math.PI/2;
+        building.add(rightWin);
+      }
+      
+      // ドア（木製）
+      const doorGeo = new THREE.PlaneGeometry(1.5, 2.5);
+      const doorMat = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.6, metalness: 0.2 });
+      const door = new THREE.Mesh(doorGeo, doorMat);
+      door.position.set(0, 1.25, 3.05);
+      building.add(door);
+      
+      // ポイントライト（窓）
+      const pointLight = new THREE.PointLight(0xffaa44, 0.8, 15);
+      pointLight.position.set(0, 4, 4);
+      building.add(pointLight);
+      
+      const y = getTerrainHeight(x, z);
+      building.position.set(x, y, z);
+      scene.add(building);
+    }
+
+    createBuilding(-20, -20);
+    createBuilding(25, 15);
+
+    // ============================================================
+    // ★プレイヤーキャラクター（強化版）★
     // ============================================================
     const playerGroup = new THREE.Group();
     
-    // 胴体
+    // 胴体（装甲風）
     const bodyGeo = new THREE.CapsuleGeometry(0.4, 1.2, 4, 8);
-    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x3498db });
+    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50, roughness: 0.6, metalness: 0.3 });
     const body = new THREE.Mesh(bodyGeo, bodyMat);
     body.position.y = 1.2;
     body.castShadow = true;
     playerGroup.add(body);
     
-    // 頭
-    const headGeo = new THREE.SphereGeometry(0.3, 8, 8);
-    const headMat = new THREE.MeshStandardMaterial({ color: 0xffcc99 });
+    // 頭（ヘルメット風）
+    const headGeo = new THREE.SphereGeometry(0.35, 8, 8);
+    const headMat = new THREE.MeshStandardMaterial({ color: 0x34495e, roughness: 0.4, metalness: 0.5 });
     const head = new THREE.Mesh(headGeo, headMat);
     head.position.y = 2.1;
     head.castShadow = true;
     playerGroup.add(head);
     
-    // ★顔（前面に目をつけて方向を分かりやすく）★
-    // 左目
-    const eyeGeo = new THREE.SphereGeometry(0.06, 8, 8);
-    const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+    // ビザー（目）
+    const visorGeo = new THREE.BoxGeometry(0.5, 0.1, 0.15);
+    const visorMat = new THREE.MeshStandardMaterial({ color: 0x3498db, roughness: 0.2, metalness: 0.8 });
+    const visor = new THREE.Mesh(visorGeo, visorMat);
+    visor.position.set(0, 2.15, 0.25);
+    playerGroup.add(visor);
     
-    const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
-    leftEye.position.set(-0.12, 2.15, 0.25); // 前面に配置
-    playerGroup.add(leftEye);
+    // 腕
+    for (let side of [-1, 1]) {
+      const armGeo = new THREE.CapsuleGeometry(0.1, 0.6, 4, 8);
+      const armMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50 });
+      const arm = new THREE.Mesh(armGeo, armMat);
+      arm.position.set(side * 0.55, 1.3, 0);
+      arm.castShadow = true;
+      playerGroup.add(arm);
+    }
     
-    // 右目
-    const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
-    rightEye.position.set(0.12, 2.15, 0.25);
-    playerGroup.add(rightEye);
+    // 脚
+    for (let side of [-1, 1]) {
+      const legGeo = new THREE.CapsuleGeometry(0.12, 0.7, 4, 8);
+      const legMat = new THREE.MeshStandardMaterial({ color: 0x1a252f });
+      const leg = new THREE.Mesh(legGeo, legMat);
+      leg.position.set(side * 0.2, 0.35, 0);
+      leg.castShadow = true;
+      playerGroup.add(leg);
+    }
     
-    // 武器（右手に保持）
+    // 武器
     const gunGeo = new THREE.BoxGeometry(0.15, 0.15, 0.6);
-    const gunMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+    const gunMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.3, metalness: 0.7 });
     const gun = new THREE.Mesh(gunGeo, gunMat);
     gun.position.set(0.5, 1.4, -0.3);
     playerGroup.add(gun);
     
     scene.add(playerGroup);
-    
+
     // ============================================================
-    // Spring Armカメラ
+    // ★モンスター敵キャラクター（強化版）★
     // ============================================================
-    function updateCamera(delta) {
-      // ズームの滑らかな遷移
-      currentZoom += (targetZoom - currentZoom) * 0.1;
-      
-      // ★正しいTPSカメラ位置計算★
-      // カメラはプレイヤーから水平方向にDISTANCE離れ、HEIGHT±cameraPitchで高さ調整
-      const camX = playerGroup.position.x + Math.sin(cameraYaw) * currentZoom;
-      const camZ = playerGroup.position.z + Math.cos(cameraYaw) * currentZoom;
-      
-      // ★cameraPitchで高さを調整（0=基準高度、正=上から見る、負=下から見上げる）★
-      const heightOffset = Math.tan(cameraPitch) * currentZoom;
-      const camY = playerGroup.position.y + SPRING_ARM.HEIGHT + heightOffset;
-      
-      let targetPos = new THREE.Vector3(camX, camY, camZ);
-      
-      // Raycastによる衝突回避（簡易版）
-      const raycaster = new THREE.Raycaster(
-        targetPos.clone(),
-        playerGroup.position.clone().sub(targetPos).normalize(),
-        0, currentZoom
-      );
-      
-      const intersects = raycaster.intersectObjects(scene.children, true);
-      let finalCamPos = targetPos;
-      
-      for (const hit of intersects) {
-        if (hit.distance < currentZoom && hit.point.y > playerGroup.position.y) {
-          finalCamPos = raycaster.ray.at(hit.distance - 0.5, new THREE.Vector3());
-          break;
-        }
-      }
-      
-      // lerpで滑らかに追従
-      camera.position.lerp(finalCamPos, SPRING_ARM.LERP_FACTOR);
-      camera.lookAt(playerGroup.position.clone().add(new THREE.Vector3(0, 1.5, 0)));
-    }
-    
-    // ============================================================
-    // プレイヤー移動（カメラ基準の相対移動）★滑らかな回転★
-    // ============================================================
-    let playerRotationTarget = 0; // ターゲットの回転角
-    const ROTATION_SPEED = 8;     // 回転速度
-    
-    function updatePlayer(delta) {
-      const speed = 6;
-      
-      // カメラの前方ベクトルを取得（Y成分を0＝水平面のみ）
-      const forward = new THREE.Vector3();
-      camera.getWorldDirection(forward);
-      forward.y = 0;
-      forward.normalize();
-      
-      // 右ベクトル（前方×上）
-      const right = new THREE.Vector3();
-      right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
-      
-      // ジョイスティック入力から移動方向を計算
-      const moveDir = new THREE.Vector3();
-      if (joystickInput.forward) moveDir.add(forward);
-      if (joystickInput.back) moveDir.sub(forward);
-      if (joystickInput.right) moveDir.add(right);
-      if (joystickInput.left) moveDir.sub(right);
-      
-      if (moveDir.length() > 0) {
-        moveDir.normalize();
-        playerGroup.position.addScaledVector(moveDir, speed * delta);
-        
-        // ★滑らかに回転（即座に向かない）★
-        const targetAngle = Math.atan2(moveDir.x, moveDir.z);
-        let angleDiff = targetAngle - playerRotationTarget;
-        
-        // 最短経路に補正（±π以内）
-        if (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-        if (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-        
-        playerRotationTarget += angleDiff * ROTATION_SPEED * delta;
-        playerGroup.rotation.y = playerRotationTarget;
-      }
-      
-      // 地面衝突（簡易: y=0固定）
-      playerGroup.position.y = 0;
-    }
-    
-    // ============================================================
-    // nipplejsジョイスティック統合
-    // ============================================================
-    const joystickManager = nipplejs.create({
-      zone: document.getElementById('joystick-zone'),
-      mode: 'static',
-      position: { left: '50%', top: '50%' },
-      color: 'white', size: 120,
-    });
-    
-    joystickManager.on('move', (evt, data) => {
-      if (!data?.vector) return;
-      const threshold = 0.3;
-      joystickInput.x = data.vector.x;
-      joystickInput.y = data.vector.y;
-      joystickInput.forward = data.vector.y > threshold;
-      joystickInput.back = data.vector.y < -threshold;
-      joystickInput.right = data.vector.x > threshold;
-      joystickInput.left = data.vector.x < -threshold;
-    });
-    
-    joystickManager.on('end', () => {
-      Object.assign(joystickInput, { x:0, y:0, forward:false, back:false, left:false, right:false });
-    });
-    
-    // ============================================================
-    // カメラ回転（右側スワイプ）
-    // ============================================================
-    const TOUCH_SENSITIVITY = 0.005;
-    let lastTouchX = 0, lastTouchY = 0;
-    
-    canvas.addEventListener('touchstart', (e) => {
-      const touch = e.touches[0];
-      if (touch.clientX > window.innerWidth / 2) {
-        lastTouchX = touch.clientX;
-        lastTouchY = touch.clientY;
-      }
-    }, { passive: true });
-    
-    canvas.addEventListener('touchmove', (e) => {
-      const touch = e.touches[0];
-      if (touch.clientX > window.innerWidth / 2) {
-        const dx = touch.clientX - lastTouchX;
-        const dy = touch.clientY - lastTouchY;
-        
-        // Three.js球座標系ではスワイプ方向と逆符号が必要
-        cameraYaw -= dx * TOUCH_SENSITIVITY;
-        cameraPitch = Math.max(SPRING_ARM.MIN_PITCH, 
-                  Math.min(SPRING_ARM.MAX_PITCH, cameraPitch - dy * TOUCH_SENSITIVITY));
-        
-        lastTouchX = touch.clientX;
-        lastTouchY = touch.clientY;
-      }
-    }, { passive: true });
-    
-    // ============================================================
-    // Phase 2: 射撃システム ★NEW!
-    // ============================================================
-    const WEAPON = {
-      AMMO_MAX: 30,
-      AMMO_CURRENT: 30,
-      FIRE_RATE: 0.15,       // 連射間隔（秒）
-      RECOIL_AMOUNT: 0.05,   // リコイル量
-      RECOVERY_SPEED: 2.0,   // リコイル回復速度
-      RELOAD_TIME: 2.0,      // リロード時間
-    };
-    
-    let lastFireTime = 0;
-    let recoilOffset = 0;
-    let isReloading = false;
-    let reloadTimer = null;
-    
-    // ヒットエフェクト用パーティクル配列
-    const hitEffects = [];
-    const muzzleFlashes = [];
-    const tracers = [];
-    
-    function shoot() {
-      if (isReloading || WEAPON.AMMO_CURRENT <= 0) return;
-      
-      const now = performance.now() / 1000;
-      if (now - lastFireTime < WEAPON.FIRE_RATE) return;
-      lastFireTime = now;
-      
-      WEAPON.AMMO_CURRENT--;
-      updateAmmoDisplay();
-      
-      // ★カメラの真正面から発射（地表と平行 + 遠距離用少し下向き）★
-      const forward = new THREE.Vector3();
-      camera.getWorldDirection(forward);  // カメラの前方ベクトル
-      
-      // ★遠くの敵にも当たるよう、弾の高さを敵の中心質量（y≈0.5）に合わせる★
-      // カメラが上を向いていても、地表とほぼ平行＋少し下向きにする
-      forward.y = -0.08;  // 約4.6度下向き → 遠距離でも敵の胴体に当たる！
-      forward.normalize();
-      
-      // 武器の位置から発射（y≈1.4m）
-      const gunWorldPos = new THREE.Vector3();
-      gun.getWorldPosition(gunWorldPos);
-      
-      // ★Raycaster: near=0.5, far=100 で近い障害物・遠距離を最適化★
-      const raycaster = new THREE.Raycaster(gunWorldPos, forward, 0.5, 100);
-      
-      // 敵との交差チェック
-      const enemyMeshes = STATE.enemies.map(e => e.mesh);
-      const intersects = raycaster.intersectObjects(enemyMeshes, true);
-      
-      if (intersects.length > 0 && intersects[0].distance < 100) {
-        // 命中！敵のHPを減少
-        const hitObject = intersects[0].object;
-        let enemy = STATE.enemies.find(e => e.mesh === hitObject || e.mesh.children.includes(hitObject));
-        if (enemy) {
-          enemy.takeDamage(25);
-          createHitEffect(intersects[0].point);
-          
-          // ヒットマーカー表示
-          showHitMarker();
-        }
-      }
-      
-      // リコイル（カメラを上にずらす）
-      recoilOffset += WEAPON.RECOIL_AMOUNT;
-      
-      // マズルフラッシュ
-      createMuzzleFlash(gunWorldPos, forward);
-      
-      // プロジェクトイルの視覚エフェクト（簡易線）
-      const target = intersects.length > 0 ? intersects[0].point : gunWorldPos.clone().add(forward.multiplyScalar(50));
-      createTracer(gunWorldPos, target);
-    }
-    
-    function createHitEffect(position) {
-      // 命中位置にパーティクルを生成
-      const particleCount = 8;
-      const positions = new Float32Array(particleCount * 3);
-      const velocities = [];
-      
-      for (let i = 0; i < particleCount; i++) {
-        positions[i*3] = position.x;
-        positions[i*3+1] = position.y;
-        positions[i*3+2] = position.z;
-        
-        // ランダムな方向に飛散
-        velocities.push(new THREE.Vector3(
-          (Math.random() - 0.5) * 4,
-          Math.random() * 4,
-          (Math.random() - 0.5) * 4
-        ));
-      }
-      
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-      
-      const mat = new THREE.PointsMaterial({ 
-        size: 0.2, 
-        color: 0xffaa44,
-        transparent: true,
-        opacity: 1
-      });
-      const particles = new THREE.Points(geo, mat);
-      scene.add(particles);
-      
-      // パーティクルとして管理
-      hitEffects.push({
-        mesh: particles,
-        velocities: velocities,
-        life: 0.3, // 秒
-        maxLife: 0.3
-      });
-    }
-    
-    function createMuzzleFlash(position, direction) {
-      const flash = new THREE.PointLight(0xffaa44, 10, 8);
-      flash.position.copy(position);
-      if (direction) {
-        flash.position.addScaledVector(direction, -1);
-      }
-      scene.add(flash);
-      
-      muzzleFlashes.push({
-        light: flash,
-        life: 0.05 // 0.05秒で消える
-      });
-    }
-    
-    function createTracer(startPos, target) {
-      // 武器位置から命中点へ線を描画（太く明るいトレーサー）
-      const points = [startPos.clone(), target];
-      const geo = new THREE.BufferGeometry().setFromPoints(points);
-      
-      // 太い線 + 明るい黄色 + 光るエフェクト
-      const mat = new THREE.LineBasicMaterial({ 
-        color: 0xffff00,       // より明るい黄色
-        linewidth: 3,           // 線の太さ（ブラウザ依存）
-        transparent: true, 
-        opacity: 1.0            // 最初は完全不透明
-      });
-      const line = new THREE.Line(geo, mat);
-      
-      // 追加: 中心に白いコア線（視認性向上）
-      const coreGeo = new THREE.BufferGeometry().setFromPoints(points);
-      const coreMat = new THREE.LineBasicMaterial({ 
-        color: 0xffffff, 
-        transparent: true, 
-        opacity: 0.8 
-      });
-      const coreLine = new THREE.Line(coreGeo, coreMat);
-      
-      scene.add(line);
-      scene.add(coreLine);
-      
-      tracers.push({
-        line: line,
-        coreLine: coreLine,  // コア線も管理
-        life: 0.15,           // 0.15秒で消える（少し長く）
-        maxLife: 0.15
-      });
-    }
-    
-    function showHitMarker() {
-      const hitMarker = document.getElementById('hit-marker');
-      hitMarker.style.opacity = '1';
-      setTimeout(() => {
-        hitMarker.style.opacity = '0';
-      }, 100);
-    }
-    
-    function reload() {
-      if (isReloading || WEAPON.AMMO_CURRENT === WEAPON.AMMO_MAX) return;
-      isReloading = true;
-      
-      // リロード中、HUDにアニメーション表示
-      const ammoDisplay = document.getElementById('ammo-display');
-      ammoDisplay.textContent = 'RELOADING...';
-      ammoDisplay.style.color = '#ffaa00';
-      
-      setTimeout(() => {
-        WEAPON.AMMO_CURRENT = WEAPON.AMMO_MAX;
-        isReloading = false;
-        updateAmmoDisplay();
-      }, WEAPON.RELOAD_TIME * 1000);
-    }
-    
-    function updateRecoil(delta) {
-      if (recoilOffset > 0) {
-        recoilOffset -= WEAPON.RECOVERY_SPEED * delta;
-        if (recoilOffset < 0) recoilOffset = 0;
-      }
-      
-      // ★リコイルを視覚効果としてカメラpositionに適用（pitchに加算しない）★
-      // cameraPitch += recoilOffset; // ← これだと毎フレームカメラの向きが変わっちゃう！
-    }
-    
-    function updateAmmoDisplay() {
-      const ammoDisplay = document.getElementById('ammo-display');
-      if (!isReloading) {
-        ammoDisplay.textContent = `${WEAPON.AMMO_CURRENT} / ${WEAPON.AMMO_MAX}`;
-        ammoDisplay.style.color = WEAPON.AMMO_CURRENT <= 5 ? '#ff4444' : 'white';
-      }
-    }
-    
-    // ============================================================
-    // Phase 2: 敵AIシステム ★NEW!
-    // ============================================================
-    class Enemy {
+    class MonsterEnemy {
       constructor(pos, type='basic') {
         this.health = type==='basic' ? 50 : 100;
         this.maxHealth = this.health;
         this.speed = type==='basic' ? 3 : 5;
         this.damage = type==='basic' ? 10 : 20;
-        this.detectionRange = 20; 
+        this.detectionRange = 20;
         this.attackRange = 3;
         
+        const group = new THREE.Group();
+        
+        // 胴体（不規則な形状）
+        const bodyGeo = new THREE.IcosahedronGeometry(0.5, 1);
+        const positions = bodyGeo.attributes.position;
+        for (let i = 0; i < positions.count; i++) {
+          const x = positions.getX(i), y = positions.getY(i), z = positions.getZ(i);
+          const noise = Math.random() * 0.15;
+          positions.setXYZ(i, x+(Math.random()-0.5)*noise, y+(Math.random()-0.5)*noise, z+(Math.random()-0.5)*noise);
+        }
+        bodyGeo.computeVertexNormals();
+        
         const color = type==='basic' ? 0xe74c3c : 0x9b59b6;
-        const m = new THREE.Mesh(new THREE.CapsuleGeometry(0.4,1.2,4,8),
-          new THREE.MeshStandardMaterial({ color }));
-        m.position.copy(pos); 
-        scene.add(m); 
-        this.mesh = m;
-        this.state = 'patrol'; 
-        this.attackCooldown = 0;
+        const bodyMat = new THREE.MeshStandardMaterial({ color, roughness: 0.8, metalness: 0.2 });
+        const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
+        bodyMesh.position.y = 1.2;
+        bodyMesh.castShadow = true;
+        group.add(bodyMesh);
         
-        // ★顔（前面に目をつけて方向を分かりやすく）★
-        const eyeGeo = new THREE.SphereGeometry(0.06, 8, 8);
-        const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // 敵は赤い目
+        // 角（Horns）
+        if (type === 'basic') {
+          for (let side of [-1, 1]) {
+            const hornGeo = new THREE.ConeGeometry(0.08, 0.4, 6);
+            const hornMat = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+            const horn = new THREE.Mesh(hornGeo, hornMat);
+            horn.position.set(side * 0.2, 1.9, -0.1);
+            horn.rotation.z = side * 0.3;
+            group.add(horn);
+          }
+        }
         
-        const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
-        leftEye.position.set(-0.12, 1.35, 0.4); // CapsuleGeometryの前面
-        m.add(leftEye);
+        // 目（前面）
+        const eyeGeo = new THREE.SphereGeometry(0.08, 6, 6);
+        const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        for (let side of [-1, 1]) {
+          const eye = new THREE.Mesh(eyeGeo, eyeMat);
+          eye.position.set(side * 0.15, 1.4, 0.35);
+          group.add(eye);
+        }
         
-        const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
-        rightEye.position.set(0.12, 1.35, 0.4);
-        m.add(rightEye);
-        
-        // HPバー（簡易版）
-        const hpBarGeo = new THREE.PlaneGeometry(1, 0.1);
+        // HPバー
+        const hpBarGeo = new THREE.PlaneGeometry(1, 0.12);
         const hpBarMat = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
         this.hpBar = new THREE.Mesh(hpBarGeo, hpBarMat);
         this.hpBar.position.y = 2.5;
-        m.add(this.hpBar);
+        group.add(this.hpBar);
+        
+        group.position.copy(pos);
+        scene.add(group);
+        this.mesh = group;
+        this.state = 'patrol';
+        this.attackCooldown = 0;
       }
       
       canSeePlayer() {
         const d = this.mesh.position.distanceTo(playerGroup.position);
         if (d > this.detectionRange) return false;
         const toP = new THREE.Vector3().subVectors(playerGroup.position, this.mesh.position).normalize();
-        const fwd = new THREE.Vector3(); 
-        this.mesh.getWorldDirection(fwd); 
-        fwd.y=0; 
+        const fwd = new THREE.Vector3();
+        this.mesh.getWorldDirection(fwd);
+        fwd.y = 0;
         fwd.normalize();
         return fwd.dot(toP) > 0.5;
       }
@@ -788,7 +450,6 @@
         this.attackCooldown -= delta;
         const d = this.mesh.position.distanceTo(playerGroup.position);
         
-        // HPバーの更新
         if (this.hpBar) {
           const hpRatio = Math.max(0, this.health / this.maxHealth);
           this.hpBar.scale.x = hpRatio;
@@ -804,8 +465,8 @@
             this.state = 'attack';
           } else {
             const dir = new THREE.Vector3().subVectors(playerGroup.position, this.mesh.position).normalize();
-            dir.y=0; 
-            this.mesh.position.addScaledVector(dir, this.speed*delta);
+            dir.y = 0;
+            this.mesh.position.addScaledVector(dir, this.speed * delta);
             this.mesh.lookAt(new THREE.Vector3(playerGroup.position.x, 0, playerGroup.position.z));
           }
         } else if (this.state === 'attack') {
@@ -815,47 +476,300 @@
             STATE.playerHealth -= this.damage;
             updateHPBar();
             this.attackCooldown = 1.5;
-            
-            // プレイヤーが倒されたらゲームオーバー
-            if (STATE.playerHealth <= 0) {
-              gameOver();
-            }
+            if (STATE.playerHealth <= 0) gameOver();
           }
         }
         
-        this.mesh.position.y = 0;
+        // 地形追従
+        const terrainY = getTerrainHeight(this.mesh.position.x, this.mesh.position.z);
+        this.mesh.position.y = terrainY + 0.2;
       }
       
       takeDamage(amount) {
         this.health -= amount;
-        this.mesh.material.emissive.setHex(0xffffff);
-        setTimeout(() => this.mesh.material.emissive.setHex(0x000000), 100);
+        this.mesh.children[0].material.emissive.setHex(0xffffff);
+        setTimeout(() => this.mesh.children[0].material.emissive.setHex(0x000000), 100);
         
         if (this.health <= 0) {
           scene.remove(this.mesh);
-          const i = STATE.enemies.indexOf(this); 
-          if(i>-1) STATE.enemies.splice(i,1);
+          const i = STATE.enemies.indexOf(this);
+          if(i > -1) STATE.enemies.splice(i, 1);
           STATE.score += 100;
           updateScoreDisplay();
-          
-          // 次のウェーブを生成（簡易版）
           spawnWave(STATE.wave + 1);
         }
       }
     }
+
+    // ============================================================
+    // カメラ更新
+    // ============================================================
+    function updateCamera(delta) {
+      currentZoom += (targetZoom - currentZoom) * 0.1;
+      
+      const camX = playerGroup.position.x + Math.sin(cameraYaw) * currentZoom;
+      const camZ = playerGroup.position.z + Math.cos(cameraYaw) * currentZoom;
+      const heightOffset = Math.tan(cameraPitch) * currentZoom;
+      const camY = playerGroup.position.y + SPRING_ARM.HEIGHT + heightOffset;
+      
+      let targetPos = new THREE.Vector3(camX, camY, camZ);
+      
+      const raycaster = new THREE.Raycaster(targetPos.clone(), playerGroup.position.clone().sub(targetPos).normalize(), 0, currentZoom);
+      const intersects = raycaster.intersectObjects(scene.children, true);
+      let finalCamPos = targetPos;
+      
+      for (const hit of intersects) {
+        if (hit.distance < currentZoom && hit.point.y > playerGroup.position.y) {
+          finalCamPos = raycaster.ray.at(hit.distance - 0.5, new THREE.Vector3());
+          break;
+        }
+      }
+      
+      camera.position.lerp(finalCamPos, SPRING_ARM.LERP_FACTOR);
+      camera.lookAt(playerGroup.position.clone().add(new THREE.Vector3(0, 1.5, 0)));
+    }
+
+    // ============================================================
+    // プレイヤー移動（地形追従付き）
+    // ============================================================
+    let playerRotationTarget = 0;
+    const ROTATION_SPEED = 8;
     
+    function updatePlayer(delta) {
+      const speed = 6;
+      
+      const forward = new THREE.Vector3();
+      camera.getWorldDirection(forward);
+      forward.y = 0;
+      forward.normalize();
+      
+      const right = new THREE.Vector3();
+      right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+      
+      const moveDir = new THREE.Vector3();
+      if (joystickInput.forward) moveDir.add(forward);
+      if (joystickInput.back) moveDir.sub(forward);
+      if (joystickInput.right) moveDir.add(right);
+      if (joystickInput.left) moveDir.sub(right);
+      
+      if (moveDir.length() > 0) {
+        moveDir.normalize();
+        playerGroup.position.addScaledVector(moveDir, speed * delta);
+        
+        const targetAngle = Math.atan2(moveDir.x, moveDir.z);
+        let angleDiff = targetAngle - playerRotationTarget;
+        if (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+        if (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+        
+        playerRotationTarget += angleDiff * ROTATION_SPEED * delta;
+        playerGroup.rotation.y = playerRotationTarget;
+      }
+      
+      // ★地形追従★
+      const terrainY = getTerrainHeight(playerGroup.position.x, playerGroup.position.z);
+      playerGroup.position.y = terrainY + 0.2;
+    }
+
+    // ============================================================
+    // ジョイスティック
+    // ============================================================
+    const joystickManager = nipplejs.create({
+      zone: document.getElementById('joystick-zone'), mode: 'static',
+      position: { left: '50%', top: '50%' }, color: 'white', size: 120,
+    });
+
+    joystickManager.on('move', (evt, data) => {
+      if (!data?.vector) return;
+      const threshold = 0.3;
+      joystickInput.x = data.vector.x;
+      joystickInput.y = data.vector.y;
+      joystickInput.forward = data.vector.y > threshold;
+      joystickInput.back = data.vector.y < -threshold;
+      joystickInput.right = data.vector.x > threshold;
+      joystickInput.left = data.vector.x < -threshold;
+    });
+
+    joystickManager.on('end', () => {
+      Object.assign(joystickInput, { x:0, y:0, forward:false, back:false, left:false, right:false });
+    });
+
+    // ============================================================
+    // カメラ回転
+    // ============================================================
+    const TOUCH_SENSITIVITY = 0.005;
+    let lastTouchX = 0, lastTouchY = 0;
+
+    canvas.addEventListener('touchstart', (e) => {
+      const touch = e.touches[0];
+      if (touch.clientX > window.innerWidth / 2) {
+        lastTouchX = touch.clientX;
+        lastTouchY = touch.clientY;
+      }
+    }, { passive: true });
+
+    canvas.addEventListener('touchmove', (e) => {
+      const touch = e.touches[0];
+      if (touch.clientX > window.innerWidth / 2) {
+        const dx = touch.clientX - lastTouchX;
+        const dy = touch.clientY - lastTouchY;
+        
+        cameraYaw -= dx * TOUCH_SENSITIVITY;
+        cameraPitch = Math.max(SPRING_ARM.MIN_PITCH, Math.min(SPRING_ARM.MAX_PITCH, cameraPitch - dy * TOUCH_SENSITIVITY));
+        
+        lastTouchX = touch.clientX;
+        lastTouchY = touch.clientY;
+      }
+    }, { passive: true });
+
+    // ============================================================
+    // 射撃システム
+    // ============================================================
+    const WEAPON = { AMMO_MAX: 30, AMMO_CURRENT: 30, FIRE_RATE: 0.15, RECOIL_AMOUNT: 0.05, RECOVERY_SPEED: 2.0, RELOAD_TIME: 2.0 };
+    let lastFireTime = 0;
+    let recoilOffset = 0;
+    let isReloading = false;
+
+    const hitEffects = [], muzzleFlashes = [], tracers = [];
+
+    function shoot() {
+      if (isReloading || WEAPON.AMMO_CURRENT <= 0) return;
+      
+      const now = performance.now() / 1000;
+      if (now - lastFireTime < WEAPON.FIRE_RATE) return;
+      lastFireTime = now;
+      
+      WEAPON.AMMO_CURRENT--;
+      updateAmmoDisplay();
+      
+      const forward = new THREE.Vector3();
+      camera.getWorldDirection(forward);
+      forward.y = -0.08;
+      forward.normalize();
+      
+      const gunWorldPos = new THREE.Vector3();
+      gun.getWorldPosition(gunWorldPos);
+      
+      const raycaster = new THREE.Raycaster(gunWorldPos, forward, 0.5, 100);
+      const enemyMeshes = STATE.enemies.map(e => e.mesh);
+      const intersects = raycaster.intersectObjects(enemyMeshes, true);
+      
+      if (intersects.length > 0 && intersects[0].distance < 100) {
+        const hitObject = intersects[0].object;
+        let enemy = STATE.enemies.find(e => e.mesh === hitObject || e.mesh.children.includes(hitObject));
+        if (enemy) {
+          enemy.takeDamage(25);
+          createHitEffect(intersects[0].point);
+          showHitMarker();
+        }
+      }
+      
+      recoilOffset += WEAPON.RECOIL_AMOUNT;
+      createMuzzleFlash(gunWorldPos, forward);
+      
+      const target = intersects.length > 0 ? intersects[0].point : gunWorldPos.clone().add(forward.clone().multiplyScalar(50));
+      createTracer(gunWorldPos, target);
+    }
+
+    function createHitEffect(position) {
+      const particleCount = 8;
+      const positions = new Float32Array(particleCount * 3);
+      const velocities = [];
+      
+      for (let i = 0; i < particleCount; i++) {
+        positions[i*3] = position.x;
+        positions[i*3+1] = position.y;
+        positions[i*3+2] = position.z;
+        
+        velocities.push(new THREE.Vector3(
+          (Math.random() - 0.5) * 4,
+          Math.random() * 4,
+          (Math.random() - 0.5) * 4
+        ));
+      }
+      
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      
+      const mat = new THREE.PointsMaterial({ size: 0.2, color: 0xffaa44, transparent: true, opacity: 1 });
+      const particles = new THREE.Points(geo, mat);
+      scene.add(particles);
+      
+      hitEffects.push({ mesh: particles, velocities, life: 0.3, maxLife: 0.3 });
+    }
+
+    function createMuzzleFlash(position, direction) {
+      const flash = new THREE.PointLight(0xffaa44, 10, 8);
+      flash.position.copy(position);
+      if (direction) flash.position.addScaledVector(direction, -1);
+      scene.add(flash);
+      
+      muzzleFlashes.push({ light: flash, life: 0.05 });
+    }
+
+    function createTracer(startPos, target) {
+      const points = [startPos.clone(), target];
+      const geo = new THREE.BufferGeometry().setFromPoints(points);
+      
+      const mat = new THREE.LineBasicMaterial({ color: 0xffff00, linewidth: 3, transparent: true, opacity: 1.0 });
+      const line = new THREE.Line(geo, mat);
+      
+      const coreGeo = new THREE.BufferGeometry().setFromPoints(points);
+      const coreMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
+      const coreLine = new THREE.Line(coreGeo, coreMat);
+      
+      scene.add(line);
+      scene.add(coreLine);
+      
+      tracers.push({ line, coreLine, life: 0.15, maxLife: 0.15 });
+    }
+
+    function showHitMarker() {
+      const hitMarker = document.getElementById('hit-marker');
+      hitMarker.style.opacity = '1';
+      setTimeout(() => { hitMarker.style.opacity = '0'; }, 100);
+    }
+
+    function reload() {
+      if (isReloading || WEAPON.AMMO_CURRENT === WEAPON.AMMO_MAX) return;
+      isReloading = true;
+      
+      const ammoDisplay = document.getElementById('ammo-display');
+      ammoDisplay.textContent = 'RELOADING...';
+      ammoDisplay.style.color = '#ffaa00';
+      
+      setTimeout(() => {
+        WEAPON.AMMO_CURRENT = WEAPON.AMMO_MAX;
+        isReloading = false;
+        updateAmmoDisplay();
+      }, WEAPON.RELOAD_TIME * 1000);
+    }
+
+    function updateRecoil(delta) {
+      if (recoilOffset > 0) {
+        recoilOffset -= WEAPON.RECOVERY_SPEED * delta;
+        if (recoilOffset < 0) recoilOffset = 0;
+      }
+    }
+
+    function updateAmmoDisplay() {
+      const ammoDisplay = document.getElementById('ammo-display');
+      if (!isReloading) {
+        ammoDisplay.textContent = `${WEAPON.AMMO_CURRENT} / ${WEAPON.AMMO_MAX}`;
+        ammoDisplay.style.color = WEAPON.AMMO_CURRENT <= 5 ? '#ff4444' : 'white';
+      }
+    }
+
+    // ============================================================
+    // ウェーブ生成
+    // ============================================================
     function spawnWave(waveNum) {
       STATE.wave = waveNum;
       
-      // ウェーブ表示
       const waveDisplay = document.getElementById('wave-display');
       waveDisplay.textContent = `WAVE ${waveNum}`;
       waveDisplay.style.opacity = '1';
-      setTimeout(() => {
-        waveDisplay.style.opacity = '0';
-      }, 2000);
+      setTimeout(() => { waveDisplay.style.opacity = '0'; }, 2000);
       
-      // 敵を生成（ウェーブ数に応じて増加）
       const enemyCount = Math.min(waveNum + 2, 8);
       for (let i = 0; i < enemyCount; i++) {
         const angle = (i / enemyCount) * Math.PI * 2;
@@ -864,55 +778,42 @@
         const z = Math.sin(angle) * distance;
         
         const type = waveNum >= 3 && Math.random() > 0.7 ? 'strong' : 'basic';
-        const enemy = new Enemy(new THREE.Vector3(x, 0, z), type);
+        const enemy = new MonsterEnemy(new THREE.Vector3(x, 0, z), type);
         STATE.enemies.push(enemy);
       }
     }
-    
+
     function updateHPBar() {
       const hpFill = document.getElementById('hp-fill');
       const healthRatio = Math.max(0, STATE.playerHealth / STATE.maxHealth);
       hpFill.style.width = (healthRatio * 100) + '%';
       
-      // HPが低い場合は赤く点滅
       if (healthRatio < 0.3) {
         hpFill.style.background = '#ff0000';
       } else {
         hpFill.style.background = 'linear-gradient(to right, #e74c3c, #ff6b6b)';
       }
     }
-    
+
     function updateScoreDisplay() {
       document.getElementById('score-display').textContent = `Score: ${STATE.score}`;
     }
-    
+
     // ============================================================
-    // ボタン操作（Pointer Events）
+    // ボタン操作
     // ============================================================
     let isFiring = false;
     
     const fireBtn = document.getElementById('fire-btn');
-    fireBtn.addEventListener('pointerdown', (e) => {
-      e.preventDefault();
-      isFiring = true;
-      shoot();
-    }, { passive: false });
+    fireBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); isFiring = true; shoot(); }, { passive: false });
+    fireBtn.addEventListener('pointerup', () => { isFiring = false; });
     
-    fireBtn.addEventListener('pointerup', (e) => {
-      isFiring = false;
-    });
-    
-    // 連射（マウスホールド時）
     setInterval(() => {
-      if (isFiring && STATE.isPlaying && !STATE.isGameOver) {
-        shoot();
-      }
+      if (isFiring && STATE.isPlaying && !STATE.isGameOver) shoot();
     }, 100);
-    
-    document.getElementById('reload-btn').addEventListener('click', () => {
-      reload();
-    });
-    
+
+    document.getElementById('reload-btn').addEventListener('click', reload);
+
     // ============================================================
     // レスポンシブ対応
     // ============================================================
@@ -921,7 +822,7 @@
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
-    
+
     // ============================================================
     // FPSモニター
     // ============================================================
@@ -937,7 +838,7 @@
         lastTime = now;
       }
     }
-    
+
     // ============================================================
     // ゲームループ
     // ============================================================
@@ -946,16 +847,13 @@
     function gameLoop() {
       if (!STATE.isPlaying || STATE.isGameOver) return;
       
-      const delta = Math.min(clock.getDelta(), 0.1); // 最大0.1秒
+      const delta = Math.min(clock.getDelta(), 0.1);
       
       updatePlayer(delta);
       updateCamera(delta);
       updateRecoil(delta);
       
-      // 敵の更新
-      for (const enemy of STATE.enemies) {
-        enemy.update(delta);
-      }
+      for (const enemy of STATE.enemies) enemy.update(delta);
       
       // ヒットエフェクトの更新
       for (let i = hitEffects.length - 1; i >= 0; i--) {
@@ -968,19 +866,14 @@
           continue;
         }
         
-        // パーティクルの移動
         const positions = effect.mesh.geometry.attributes.position.array;
         for (let j = 0; j < effect.velocities.length; j++) {
           positions[j*3] += effect.velocities[j].x * delta;
           positions[j*3+1] += effect.velocities[j].y * delta;
           positions[j*3+2] += effect.velocities[j].z * delta;
-          
-          // 重力
           effect.velocities[j].y -= 9.8 * delta;
         }
         effect.mesh.geometry.attributes.position.needsUpdate = true;
-        
-        // フェードアウト
         effect.mesh.material.opacity = effect.life / effect.maxLife;
       }
       
@@ -993,12 +886,11 @@
           scene.remove(flash.light);
           muzzleFlashes.splice(i, 1);
         } else {
-          // 点滅エフェクト
           flash.light.intensity = flash.life / 0.05 * 10;
         }
       }
       
-      // トレーサーの更新（外側黄色線 + 内側白色コア）
+      // トレーサーの更新
       for (let i = tracers.length - 1; i >= 0; i--) {
         const tracer = tracers[i];
         tracer.life -= delta;
@@ -1008,19 +900,16 @@
           scene.remove(tracer.coreLine);
           tracers.splice(i, 1);
         } else {
-          // フェードアウト（外側線）
           tracer.line.material.opacity = tracer.life / tracer.maxLife;
-          // コア線も少し長く残す
           tracer.coreLine.material.opacity = (tracer.life / tracer.maxLife) * 0.8;
         }
       }
       
       checkFPS();
-      
       renderer.render(scene, camera);
       requestAnimationFrame(gameLoop);
     }
-    
+
     // ============================================================
     // スタート/リスタート処理
     // ============================================================
@@ -1035,14 +924,11 @@
       WEAPON.AMMO_CURRENT = WEAPON.AMMO_MAX;
       isReloading = false;
       
-      playerGroup.position.set(0, 0, 0);
+      playerGroup.position.set(0, getTerrainHeight(0, 0) + 0.2, 0);
       cameraYaw = 0;
-      cameraPitch = 0.3;
+      cameraPitch = 0;
       
-      // 既存の敵を削除
-      for (const enemy of STATE.enemies) {
-        scene.remove(enemy.mesh);
-      }
+      for (const enemy of STATE.enemies) scene.remove(enemy.mesh);
       
       updateHPBar();
       updateScoreDisplay();
@@ -1052,32 +938,23 @@
       document.getElementById('game-over-screen').style.display = 'none';
       
       clock.start();
-      
-      // 最初のウェーブを生成
       spawnWave(1);
-      
       gameLoop();
     }
-    
+
     function gameOver() {
       STATE.isGameOver = true;
-      
-      // ★スコアボードの更新★
       document.getElementById('final-score').textContent = `Score: ${STATE.score}`;
       document.getElementById('final-wave').textContent = STATE.wave;
       document.getElementById('enemies-defeated').textContent = Math.floor(STATE.score / 100);
-      
       document.getElementById('game-over-screen').style.display = 'flex';
     }
-    
-    // ボタンイベント
+
     document.getElementById('start-btn').addEventListener('click', startGame);
     document.getElementById('restart-btn').addEventListener('click', startGame);
-    
-    console.log('✅ Browser TPS Phase 2 loaded!');
-    console.log('🕹️ Left Joystick = Move | 👆 Right Swipe = Look');
-    console.log('🔫 Fire Button = Shoot | 🔄 Reload = R');
-    console.log('⚔️ Enemies: Wave system active!');
+
+    console.log('✅ Browser TPS Phase 4 Enhanced loaded!');
+    console.log('🌍 Procedural Terrain + PBR Characters + Monsters');
   </script>
 </body>
 </html>
