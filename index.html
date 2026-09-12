@@ -383,22 +383,22 @@
     leftArmPivot.add(leftArm);
     playerGroup.add(leftArmPivot);
     
-    // 右腕（武器を持つ側）
+    // 右腕（アニメーション用）
     const rightArmPivot = new THREE.Group();
     rightArmPivot.position.set(0.55, 1.6, 0);
     const rightArm = new THREE.Mesh(armGeo, armMat);
     rightArm.position.y = -0.3;
     rightArm.castShadow = true;
     rightArmPivot.add(rightArm);
+    playerGroup.add(rightArmPivot);
     
-    // 武器（右手に保持）
+    // ★銃（右腕に固定せず、プレイヤー本体に配置★）
     const gunGeo = new THREE.BoxGeometry(0.15, 0.15, 0.6);
     const gunMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.3, metalness: 0.7 });
     const gun = new THREE.Mesh(gunGeo, gunMat);
-    gun.position.set(0, -0.6, -0.2);
-    rightArm.add(gun);
-    
-    playerGroup.add(rightArmPivot);
+    // ★銃はプレイヤーの正面に固定（腕のアニメーションに影響されない）★
+    gun.position.set(0.4, 1.2, -0.5);
+    playerGroup.add(gun);
     
     // === 脚（腰ジョイント）===
     const leftLegPivot = new THREE.Group();
@@ -719,13 +719,15 @@
       WEAPON.AMMO_CURRENT--;
       updateAmmoDisplay();
       
+      // ★銃の実際の位置を取得（プレイヤー本体に配置済み）★
+      const gunWorldPos = new THREE.Vector3();
+      gun.getWorldPosition(gunWorldPos);
+      
+      // カメラの真正面から発射
       const forward = new THREE.Vector3();
       camera.getWorldDirection(forward);
       forward.y = -0.08;
       forward.normalize();
-      
-      const gunWorldPos = new THREE.Vector3();
-      gun.getWorldPosition(gunWorldPos);
       
       const raycaster = new THREE.Raycaster(gunWorldPos, forward, 0.5, 100);
       const enemyMeshes = STATE.enemies.map(e => e.mesh);
