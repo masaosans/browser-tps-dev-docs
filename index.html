@@ -235,13 +235,30 @@
     // ============================================================
     function createRock(x, z) {
       const size = 0.5 + Math.random() * 1.5;
-      const geo = new THREE.IcosahedronGeometry(size, 2);
       
+      // ★セグメント数を増やして滑らかに（3→4）★
+      const geo = new THREE.IcosahedronGeometry(size, 4);
+      
+      // ★Perlin Noise風の変形でリアルな形状に★
       const positions = geo.attributes.position;
       for (let i = 0; i < positions.count; i++) {
-        const x = positions.getX(i), y = positions.getY(i), z = positions.getZ(i);
-        const noise = Math.random() * 0.3;
-        positions.setXYZ(i, x + (Math.random()-0.5)*noise, y + (Math.random()-0.5)*noise, z + (Math.random()-0.5)*noise);
+        const px = positions.getX(i), py = positions.getY(i), pz = positions.getZ(i);
+        
+        // 3層のノイズを合成（Fractal Noise）
+        const n1 = Math.sin(px * 2.5 + pz * 1.7) * Math.cos(py * 2.0) * 0.15;
+        const n2 = Math.sin(px * 5.0 - py * 3.0) * Math.cos(pz * 4.0) * 0.08;
+        const n3 = Math.sin(px * 10.0 + pz * 8.0) * Math.cos(py * 9.0) * 0.04;
+        
+        // 半径方向に変形（球を押しつぶす）
+        const displacement = (n1 + n2 + n3) * size;
+        const length = Math.sqrt(px*px + py*py + pz*pz);
+        if (length > 0) {
+          positions.setXYZ(i, 
+            px + (px/length) * displacement,
+            py + (py/length) * displacement * 0.7, // Y軸は少し潰す
+            pz + (pz/length) * displacement
+          );
+        }
       }
       geo.computeVertexNormals();
       
@@ -251,7 +268,7 @@
       
       const rock = new THREE.Mesh(geo, mat);
       const y = getTerrainHeight(x, z);
-      rock.position.set(x, y + size*0.3, z);
+      rock.position.set(x, y + size*0.2, z); // 地面に半分埋まるように
       rock.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
       rock.castShadow = true;
       rock.receiveShadow = true;
@@ -267,6 +284,16 @@
     // ============================================================
     function createBuilding(x, z) {
       const building = new THREE.Group();
+      
+      // ★傾斜対応: 4隅の高さを取得して平均値をベースに★
+      const halfSize = 3; // 建物の半分の幅（6x6なので）
+      const corners = [
+        getTerrainHeight(x - halfSize, z - halfSize),
+        getTerrainHeight(x + halfSize, z - halfSize),
+        getTerrainHeight(x - halfSize, z + halfSize),
+        getTerrainHeight(x + halfSize, z + halfSize),
+      ];
+      const avgY = (corners[0] + corners[1] + corners[2] + corners[3]) / 4;
       
       // 本体
       const bodyGeo = new THREE.BoxGeometry(6, 8, 6);
@@ -304,8 +331,7 @@
       pointLight.position.set(0, 4, 4);
       building.add(pointLight);
       
-      const y = getTerrainHeight(x, z);
-      building.position.set(x, y, z);
+      building.position.set(x, avgY, z); // ★傾斜対応済み★
       scene.add(building);
     }
 
