@@ -510,17 +510,28 @@
       const camX = playerGroup.position.x + Math.sin(cameraYaw) * currentZoom;
       const camZ = playerGroup.position.z + Math.cos(cameraYaw) * currentZoom;
       const heightOffset = Math.tan(cameraPitch) * currentZoom;
-      const camY = playerGroup.position.y + SPRING_ARM.HEIGHT + heightOffset;
+      const baseCamY = playerGroup.position.y + SPRING_ARM.HEIGHT + heightOffset;
       
-      let targetPos = new THREE.Vector3(camX, camY, camZ);
+      let targetPos = new THREE.Vector3(camX, baseCamY, camZ);
       
-      const raycaster = new THREE.Raycaster(targetPos.clone(), playerGroup.position.clone().sub(targetPos).normalize(), 0, currentZoom);
+      // ★Raycast: カメラ→プレイヤー方向（衝突回避用）★
+      // 範囲を広く（20m）、高さ上限付きで障害物をチェック
+      const raycaster = new THREE.Raycaster(targetPos.clone(), 
+        playerGroup.position.clone().sub(targetPos).normalize(), 0, 20);
       const intersects = raycaster.intersectObjects(scene.children, true);
       let finalCamPos = targetPos;
       
       for (const hit of intersects) {
         if (hit.distance < currentZoom && hit.point.y > playerGroup.position.y) {
-          finalCamPos = raycaster.ray.at(hit.distance - 0.5, new THREE.Vector3());
+          // ★高さ上限: 基準高度+3mまで（見上げるのを防止）★
+          const maxCamY = playerGroup.position.y + SPRING_ARM.HEIGHT + 3;
+          const rayPoint = raycaster.ray.at(hit.distance - 0.5, new THREE.Vector3());
+          
+          if (rayPoint.y <= maxCamY) {
+            finalCamPos.copy(rayPoint);
+          } else {
+            // 高さ上限超え → そのまま（跳ね上げ防止）
+          }
           break;
         }
       }
