@@ -346,6 +346,7 @@
     // ★アニメーション用パラメータ★
     let walkCycle = 0;
     const WALK_SPEED = 12; // 歩行速度
+    let aimAngle = 0; // ★射撃時の腕の角度（スムーズに動かす）★
     
     // === 胴体（ヒップジョイント）===
     const bodyGeo = new THREE.CapsuleGeometry(0.4, 1.2, 4, 8);
@@ -383,22 +384,23 @@
     leftArmPivot.add(leftArm);
     playerGroup.add(leftArmPivot);
     
-    // 右腕（アニメーション用）
+    // 右腕（武器を持つ側）
     const rightArmPivot = new THREE.Group();
     rightArmPivot.position.set(0.55, 1.6, 0);
     const rightArm = new THREE.Mesh(armGeo, armMat);
     rightArm.position.y = -0.3;
     rightArm.castShadow = true;
     rightArmPivot.add(rightArm);
-    playerGroup.add(rightArmPivot);
     
-    // ★銃（右腕に固定せず、プレイヤー本体に配置★）
+    // ★銃（右手に保持）★
     const gunGeo = new THREE.BoxGeometry(0.15, 0.15, 0.6);
     const gunMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.3, metalness: 0.7 });
     const gun = new THREE.Mesh(gunGeo, gunMat);
-    // ★銃はプレイヤーの正面に固定（腕のアニメーションに影響されない）★
-    gun.position.set(0.4, 1.2, -0.5);
-    playerGroup.add(gun);
+    // ★銃を右手に固定（腕と一緒に動く）★
+    gun.position.set(0, -0.6, -0.2);
+    rightArm.add(gun);
+    
+    playerGroup.add(rightArmPivot);
     
     // === 脚（腰ジョイント）===
     const leftLegPivot = new THREE.Group();
@@ -629,7 +631,7 @@
         leftLegPivot.rotation.x = swingAngle;
         rightLegPivot.rotation.x = -swingAngle;
         
-        // 左腕・右腕（足と逆方向に振る）
+        // 左腕・右腕（歩行時は足を逆方向に振る）
         leftArmPivot.rotation.x = -swingAngle * 0.8;
         rightArmPivot.rotation.x = swingAngle * 0.8;
         
@@ -645,6 +647,26 @@
         rightArmPivot.rotation.x *= 0.9;
         
         body.position.y += (1.2 - body.position.y) * 0.1;
+      }
+      
+      // ★射撃時の腕のアニメーション（常に適用）★
+      // カメラが上を向いていたら、腕も一緒に上げる
+      const camForward = new THREE.Vector3();
+      camera.getWorldDirection(camForward);
+      const aimTarget = Math.max(0, -camForward.y) * 1.2; // 上向きなら腕を上げる
+      
+      // スムーズにaimAngleを追従（Lerp）
+      aimAngle += (aimTarget - aimAngle) * 5 * delta;
+      
+      // ★右腕の回転: 歩行アニメーション + 射撃時の上げ上げ★
+      const walkSwing = isMoving ? Math.sin(walkCycle) * 0.5 : 0;
+      rightArmPivot.rotation.x = walkSwing - aimAngle; // 上向きならさらに上げる
+      
+      // 左腕も少し動かす（バランス用）
+      if (isMoving) {
+        leftArmPivot.rotation.x = -walkSwing * 0.8;
+      } else {
+        leftArmPivot.rotation.x *= 0.9;
       }
     }
 
