@@ -95,7 +95,7 @@
     // ============================================================
     const STATE = { playerHealth: 100, maxHealth: 100, score: 0, wave: 1, enemies: [], isPlaying: false, isGameOver: false };
     
-    const SPRING_ARM = { DISTANCE: 8, HEIGHT: 1.5, LERP_FACTOR: 0.1, MIN_PITCH: 0, MAX_PITCH: 0.8, ZOOM_DISTANCE: 4 };
+    const SPRING_ARM = { DISTANCE: 8, HEIGHT: 2.0, LERP_FACTOR: 0.1, MIN_PITCH: 0, MAX_PITCH: 0.6 };
     let cameraYaw = 0, cameraPitch = 0;
     let currentZoom = SPRING_ARM.DISTANCE, targetZoom = SPRING_ARM.DISTANCE;
     const joystickInput = { x: 0, y: 0, forward: false, back: false, left: false, right: false };
