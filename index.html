@@ -514,11 +514,14 @@
       
       let targetPos = new THREE.Vector3(camX, baseCamY, camZ);
       
-      // ★Raycast: カメラ→プレイヤー方向（衝突回避用）★
-      // 範囲を広く（20m）、高さ上限付きで障害物をチェック
+      // ★障害物のみをRaycastでチェック（敵は除外！）★
+      const obstacles = scene.children.filter(obj => 
+        obj !== playerGroup && !STATE.enemies.some(e => e.mesh === obj)
+      );
+      
       const raycaster = new THREE.Raycaster(targetPos.clone(), 
-        playerGroup.position.clone().sub(targetPos).normalize(), 0, 20);
-      const intersects = raycaster.intersectObjects(scene.children, true);
+        playerGroup.position.clone().sub(targetPos).normalize(), 0, currentZoom);
+      const intersects = raycaster.intersectObjects(obstacles, true);
       let finalCamPos = targetPos;
       
       for (const hit of intersects) {
