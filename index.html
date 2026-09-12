@@ -528,21 +528,33 @@
         obj !== playerGroup && !isEnemyObject(obj)
       );
       
+      // ★Raycast: カメラ→プレイヤー方向（衝突回避用）★
+      // 範囲を currentZoom * 1.5 に拡張（障害物を確実に検知）
       const raycaster = new THREE.Raycaster(targetPos.clone(), 
-        playerGroup.position.clone().sub(targetPos).normalize(), 0, currentZoom);
+        playerGroup.position.clone().sub(targetPos).normalize(), 0, currentZoom * 1.5);
       const intersects = raycaster.intersectObjects(obstacles, true);
+      
+      // ★最終カメラ位置を計算（障害物チェック付き）★
       let finalCamPos = targetPos;
       
-      for (const hit of intersects) {
-        if (hit.distance < currentZoom && hit.point.y > playerGroup.position.y) {
-          // ★高さ上限: 基準高度+2mまで（見上げるのを防止）★
-          const maxCamY = playerGroup.position.y + SPRING_ARM.HEIGHT + 2;
-          const rayPoint = raycaster.ray.at(hit.distance - 0.5, new THREE.Vector3());
+      if (intersects.length > 0) {
+        for (const hit of intersects) {
+          const distToPlayer = hit.distance;
           
-          if (rayPoint.y <= maxCamY) {
-            finalCamPos.copy(rayPoint);
+          // ★最小距離: DISTANCEの80%までしか寄らない（ズーム防止）★
+          const minDistance = SPRING_ARM.DISTANCE * 0.8;
+          
+          if (distToPlayer < currentZoom && distToPlayer > minDistance) {
+            // 障害物がカメラとプレイヤーの間にある → カメラを障害物の手前に配置
+            const rayPoint = raycaster.ray.at(distToPlayer - 0.3, new THREE.Vector3());
+            
+            // ★高さ制限: 基準高度+2mまで★
+            const maxCamY = playerGroup.position.y + SPRING_ARM.HEIGHT + 2;
+            if (rayPoint.y <= maxCamY) {
+              finalCamPos.copy(rayPoint);
+            }
           }
-          break;
+          break; // 最初の障害物のみ対応
         }
       }
       
