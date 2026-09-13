@@ -98,6 +98,10 @@
     const SPRING_ARM = { DISTANCE: 8, HEIGHT: 2.0, LERP_FACTOR: 0.1, MIN_PITCH: 0, MAX_PITCH: 0.6 };
     let cameraYaw = 0, cameraPitch = 0;
     let currentZoom = SPRING_ARM.DISTANCE, targetZoom = SPRING_ARM.DISTANCE;
+    
+    // ★射撃状態管理★
+    const SHOOT_STATE = { isAiming: false, aimBlend: 0, aimSpeed: 8.0 }; // aimBlend: 0=hipfire, 1=ADS
+    
     const joystickInput = { x: 0, y: 0, forward: false, back: false, left: false, right: false };
 
     // ============================================================
@@ -392,13 +396,25 @@
     rightArm.castShadow = true;
     rightArmPivot.add(rightArm);
     
-    // ★銃（右手に保持）★
+    // ★右手メッシュ（銃の保持位置を正確に）★
+    const handGeo = new THREE.SphereGeometry(0.1, 6, 6);
+    const handMat = new THREE.MeshStandardMaterial({ color: 0x34495e });
+    const rightHand = new THREE.Mesh(handGeo, handMat);
+    rightHand.position.set(0, -0.6, -0.2);
+    rightArm.add(rightHand);
+    
+    // ★銃（右手に固定）★
     const gunGeo = new THREE.BoxGeometry(0.15, 0.15, 0.6);
     const gunMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.3, metalness: 0.7 });
     const gun = new THREE.Mesh(gunGeo, gunMat);
-    // ★銃を右手に固定（腕と一緒に動く）★
-    gun.position.set(0, -0.6, -0.2);
+    // ★右手の先端に配置★
+    gun.position.set(0, -0.65, -0.45);
     rightArm.add(gun);
+    
+    // ★銃口フラッシュ用ポイントライト（銃本体に固定）★
+    const muzzleLight = new THREE.PointLight(0xffaa44, 0, 5);
+    muzzleLight.position.set(0, -0.65, -0.75);
+    rightArm.add(muzzleLight);
     
     playerGroup.add(rightArmPivot);
     
@@ -559,7 +575,7 @@
     }
 
     // ============================================================
-    // カメラ更新
+    // カメラ更新（リコイル回転付き）
     // ============================================================
     function updateCamera(delta) {
       currentZoom += (targetZoom - currentZoom) * 0.1;
@@ -570,11 +586,21 @@
       const baseCamY = playerGroup.position.y + SPRING_ARM.HEIGHT + heightOffset;
       
       // ★障害物チェックを削除（TPSでは簡潔に）★
-      // 障害物が視界を遮っても、カメラが跳ね上がるよりマシ
       let finalCamPos = new THREE.Vector3(camX, baseCamY, camZ);
       
       camera.position.lerp(finalCamPos, SPRING_ARM.LERP_FACTOR);
-      camera.lookAt(playerGroup.position.clone().add(new THREE.Vector3(0, 1.5, 0)));
+      
+      // ★リコイル回転をカメラに適用★
+      const lookTarget = playerGroup.position.clone().add(new THREE.Vector3(0, 1.5, 0));
+      camera.lookAt(lookTarget);
+      
+      // リコイル回転（垂直+水平）
+      camera.rotation.x += recoilVertical * 0.02; // 上方向スナップ
+      camera.rotation.y += recoilHorizontal * 0.015; // 左右スパッド
+      
+      // カメラリコイル回復（毎フレーム少しずつ戻す）
+      recoilVertical *= Math.pow(0.3, delta);
+      if (recoilVertical < 0.001) recoilVertical = 0;
     }
 
     // ============================================================
@@ -722,15 +748,41 @@
     }, { passive: true });
 
     // ============================================================
-    // 射撃システム
+    // 射撃システム（ADS + リコイル可視化 + ウェポンスウェイ）
     // ============================================================
-    const WEAPON = { AMMO_MAX: 30, AMMO_CURRENT: 30, FIRE_RATE: 0.15, RECOIL_AMOUNT: 0.05, RECOVERY_SPEED: 2.0, RELOAD_TIME: 2.0 };
-    let lastFireTime = 0;
-    let recoilOffset = 0;
+    const WEAPON = { AMMO_MAX: 30, AMMO_CURRENT: 30, FIRE_RATE: 0.15, RECOIL_AMOUNT: 0.08, RECOVERY_SPEED: 4.0, RELOAD_TIME: 2.0 };
+    
+    // ★リコイル状態★
+    let recoilVertical = 0;     // 垂直リコイル（上方向）
+    let recoilHorizontal = 0;   // 水平スパッド
+    let recoilRecovery = 0;     // リコイル回復量
+    
+    // ★ADS状態★
+    let currentAimBlend = 0;    // 0=HipFire, 1=ADS
+    const ADS_ZOOM_FACTOR = 0.55; // ADS時のズーム倍率（0.55 = 45%縮小）
+    
+    // ★ウェポンスウェイ★
+    let swayTime = 0;
+    const SWAY_IDLE_STRENGTH = 0.015;
+    const SWAY_MOVE_STRENGTH = 0.025;
+    const SWAY_AIM_STRENGTH = 0.008;
+    
+    // ★リロード状態★
     let isReloading = false;
+    let reloadProgress = 0;     // 0→1
+    let gunReloadRotation = 0;  // リロード時の銃回転
+    
+    let lastFireTime = 0;
 
     const hitEffects = [], muzzleFlashes = [], tracers = [];
-
+    
+    // ★ADS切替（右クリック/COVERボタン）★
+    function toggleAim() {
+      if (isReloading) return;
+      SHOOT_STATE.isAiming = !SHOOT_STATE.isAiming;
+    }
+    
+    // ★射撃処理★
     function shoot() {
       if (isReloading || WEAPON.AMMO_CURRENT <= 0) return;
       
@@ -741,15 +793,26 @@
       WEAPON.AMMO_CURRENT--;
       updateAmmoDisplay();
       
-      // ★銃の実際の位置を取得（プレイヤー本体に配置済み）★
-      const gunWorldPos = new THREE.Vector3();
-      gun.getWorldPosition(gunWorldPos);
+      // ★リコイル適用★
+      recoilVertical += WEAPON.RECOIL_AMOUNT * (0.8 + Math.random() * 0.4); // ランダム性
+      recoilHorizontal += (Math.random() - 0.5) * WEAPON.RECOIL_AMOUNT * 0.6;
       
-      // カメラの真正面から発射
+      // ★マズルフラッシュ（ライト点灯）★
+      muzzleLight.intensity = 8;
+      
+      // カメラの真正面からレイキャスト
       const forward = new THREE.Vector3();
       camera.getWorldDirection(forward);
-      forward.y = -0.08;
+      
+      // ADS時は少し補正（照準中央に合わせる）
+      if (currentAimBlend > 0.5) {
+        forward.y += 0.02; // 照準をわずかに上げる
+      }
       forward.normalize();
+      
+      // ★銃のワールド位置を取得★
+      const gunWorldPos = new THREE.Vector3();
+      gun.getWorldPosition(gunWorldPos);
       
       const raycaster = new THREE.Raycaster(gunWorldPos, forward, 0.5, 100);
       const enemyMeshes = STATE.enemies.map(e => e.mesh);
@@ -765,13 +828,122 @@
         }
       }
       
-      recoilOffset += WEAPON.RECOIL_AMOUNT;
+      // マズルフラッシュ（シーン用）
       createMuzzleFlash(gunWorldPos, forward);
       
+      // トレーサー
       const target = intersects.length > 0 ? intersects[0].point : gunWorldPos.clone().add(forward.clone().multiplyScalar(50));
       createTracer(gunWorldPos, target);
     }
-
+    
+    // ★リコイル更新（毎フレーム）★
+    function updateRecoil(delta) {
+      // 垂直リコイル回復
+      if (recoilVertical > 0) {
+        recoilVertical -= WEAPON.RECOVERY_SPEED * delta;
+        if (recoilVertical < 0) recoilVertical = 0;
+      }
+      
+      // 水平スパッド減衰（速く戻る）
+      if (recoilHorizontal !== 0) {
+        recoilHorizontal *= Math.pow(0.1, delta); // 指数関数的減衰
+        if (Math.abs(recoilHorizontal) < 0.001) recoilHorizontal = 0;
+      }
+      
+      // マズルフラッシュ減衰
+      muzzleLight.intensity *= Math.pow(0.01, delta);
+    }
+    
+    // ★ADSブレンド更新★
+    function updateAimBlend(delta) {
+      const targetBlend = SHOOT_STATE.isAiming ? 1 : 0;
+      const speed = SHOOT_STATE.aimSpeed * (SHOOT_STATE.isAiming ? 1.5 : 2.0); // ADS時は少し遅く、解除は速く
+      
+      currentAimBlend += (targetBlend - currentAimBlend) * Math.min(1, speed * delta);
+      
+      // ズーム補間（ADS時はズームイン）
+      targetZoom = SPRING_ARM.DISTANCE * (1.0 - ADS_ZOOM_FACTOR * currentAimBlend);
+    }
+    
+    // ★ウェポンスウェイ更新★
+    function updateWeaponSway(delta, camDir) {
+      swayTime += delta;
+      
+      const isMovingNow = joystickInput.forward || joystickInput.back || joystickInput.left || joystickInput.right;
+      const moveFactor = isMovingNow ? 1.0 : 0.0;
+      
+      // Perlin Noise風スウェイ（2つのサイン波を合成）
+      const swayX = (Math.sin(swayTime * 1.3) * 0.5 + Math.sin(swayTime * 0.7) * 0.5);
+      const swayY = (Math.cos(swayTime * 1.1) * 0.5 + Math.cos(swayTime * 0.9) * 0.5);
+      
+      // スウェイ強度を状態別に調整
+      let strength;
+      if (currentAimBlend > 0.7) {
+        strength = SWAY_AIM_STRENGTH; // ADS時は小さく（安定）
+      } else if (moveFactor > 0) {
+        strength = SWAY_MOVE_STRENGTH; // 移動中は中程度
+      } else {
+        strength = SWAY_IDLE_STRENGTH; // アイドルの最小
+      }
+      
+      // ★右腕にスウェイを適用（歩行・射撃アニメーションと合成）★
+      const walkSwing = isMoving ? Math.sin(walkCycle) * 0.5 : 0;
+      const aimAngleTarget = camDir ? Math.max(0, -camDir.y) * 1.2 : 0;
+      aimAngle += (aimAngleTarget - aimAngle) * 5 * delta;
+      
+      // ADS時は腕を前に押し出す（構え方）
+      const armExtend = currentAimBlend * 0.3; // 最大0.3だけ前に
+      
+      rightArmPivot.rotation.x = walkSwing - aimAngle + swayY * strength;
+      rightArmPivot.rotation.z = -swayX * strength * 0.5; // 左右の傾き
+      
+      // ADS時の腕の位置補正（前に押し出す）
+      rightArmPivot.position.x = 0.55 + armExtend * Math.cos(cameraYaw);
+      rightArmPivot.position.z = armExtend * Math.sin(cameraYaw);
+      
+      // Hip Fire時は元の位置に戻す
+      if (currentAimBlend < 0.1) {
+        rightArmPivot.position.x += (0.55 - rightArmPivot.position.x) * 3 * delta;
+        rightArmPivot.position.z *= (1 - 2 * delta);
+      }
+      
+      // 左腕もスウェイ適用（バランス用）
+      if (isMoving) {
+        leftArmPivot.rotation.x = -walkSwing * 0.8 + swayY * strength * 0.3;
+      } else {
+        leftArmPivot.rotation.x *= 0.9;
+        leftArmPivot.rotation.z = swayX * strength * 0.2;
+      }
+    }
+    
+    // ★リロードアニメーション★
+    function updateReloadAnimation(delta) {
+      if (!isReloading) return;
+      
+      reloadProgress += delta / WEAPON.RELOAD_TIME;
+      
+      if (reloadProgress >= 1) {
+        WEAPON.AMMO_CURRENT = WEAPON.AMMO_MAX;
+        isReloading = false;
+        reloadProgress = 0;
+        gunReloadRotation = 0;
+        updateAmmoDisplay();
+        return;
+      }
+      
+      // リロード時の銃の回転アニメーション（0→1→0）
+      if (reloadProgress < 0.5) {
+        // 前半: 銃を下げる
+        gunReloadRotation = Math.sin(reloadProgress * Math.PI) * -1.2;
+      } else {
+        // 後半: 銃を元に戻す
+        const t = (reloadProgress - 0.5) * 2;
+        gunReloadRotation = Math.sin(t * Math.PI) * -1.2;
+      }
+      
+      gun.rotation.x = gunReloadRotation;
+    }
+    
     function createHitEffect(position) {
       const particleCount = 8;
       const positions = new Float32Array(particleCount * 3);
@@ -834,23 +1006,11 @@
     function reload() {
       if (isReloading || WEAPON.AMMO_CURRENT === WEAPON.AMMO_MAX) return;
       isReloading = true;
+      reloadProgress = 0;
       
       const ammoDisplay = document.getElementById('ammo-display');
       ammoDisplay.textContent = 'RELOADING...';
       ammoDisplay.style.color = '#ffaa00';
-      
-      setTimeout(() => {
-        WEAPON.AMMO_CURRENT = WEAPON.AMMO_MAX;
-        isReloading = false;
-        updateAmmoDisplay();
-      }, WEAPON.RELOAD_TIME * 1000);
-    }
-
-    function updateRecoil(delta) {
-      if (recoilOffset > 0) {
-        recoilOffset -= WEAPON.RECOVERY_SPEED * delta;
-        if (recoilOffset < 0) recoilOffset = 0;
-      }
     }
 
     function updateAmmoDisplay() {
@@ -913,8 +1073,12 @@
     setInterval(() => {
       if (isFiring && STATE.isPlaying && !STATE.isGameOver) shoot();
     }, 100);
-
+    
     document.getElementById('reload-btn').addEventListener('click', reload);
+    
+    // ★COVERボタン = ADS切替★
+    const coverBtn = document.getElementById('cover-btn');
+    coverBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); toggleAim(); });
 
     // ============================================================
     // レスポンシブ対応
@@ -951,9 +1115,16 @@
       
       const delta = Math.min(clock.getDelta(), 0.1);
       
+      // ★カメラの真正面ベクトル（ウェポンスウェイ用）★
+      const camForward = new THREE.Vector3();
+      camera.getWorldDirection(camForward);
+      
       updatePlayer(delta);
-      updateCamera(delta);
+      updateAimBlend(delta);
+      updateWeaponSway(delta, camForward);
       updateRecoil(delta);
+      updateReloadAnimation(delta);
+      updateCamera(delta); // リコイル適用済みで呼び出し
       
       for (const enemy of STATE.enemies) enemy.update(delta);
       
