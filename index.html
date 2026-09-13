@@ -401,7 +401,15 @@
     const rightArmPivot = new THREE.Group();
     rightArmPivot.position.set(0.55, 1.6, 0);
     
-    // ★拳銃を右腕ピボットに直接配置（腕メッシュの子ではない）★
+    // ★右腕（CapsuleGeometry）- 下方向に伸びる
+    const rightArmGeo = new THREE.CapsuleGeometry(0.1, 0.6, 4, 8);
+    const rightArmMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50 });
+    const rightArmMesh = new THREE.Mesh(rightArmGeo, rightArmMat);
+    rightArmMesh.position.y = -0.3; // ピボットから下
+    rightArmMesh.castShadow = true;
+    rightArmPivot.add(rightArmMesh);
+    
+    // ★拳銃（持ち手 + 銃身）★
     const gunGroup = new THREE.Group();
     
     // グリップ（持ち手）- 縦向き、手が握る部分
@@ -429,7 +437,7 @@
     muzzleLight.position.set(0, 0.25, -0.48); // バレルの先
     gunGroup.add(muzzleLight);
     
-    // ★拳銃を腕の下端に配置★
+    // ★拳銃を右腕ピボットに直接配置★
     gunGroup.position.set(0, -0.6, 0); // 腕の先端
     
     rightArmPivot.add(gunGroup);
