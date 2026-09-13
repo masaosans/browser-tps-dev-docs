@@ -854,21 +854,21 @@
       // ★マズルフラッシュ（ライト点灯）★
       muzzleLight.intensity = 8;
       
-      // カメラの真正面からレイキャスト
-      const forward = new THREE.Vector3();
-      camera.getWorldDirection(forward);
+      // ★銃のワールド方向を取得してレイキャスト（カメラの向きではなく銃口方向）★
+      const gunWorldDir = new THREE.Vector3(0, 0, -1);
+      gunWorldDir.applyQuaternion(rightArm.getWorldQuaternion(new THREE.Quaternion()));
       
       // ADS時は少し補正（照準中央に合わせる）
       if (currentAimBlend > 0.5) {
-        forward.y += 0.02; // 照準をわずかに上げる
+        gunWorldDir.y += 0.02; // 照準をわずかに上げる
       }
-      forward.normalize();
+      gunWorldDir.normalize();
       
       // ★銃のワールド位置を取得★
       const gunWorldPos = new THREE.Vector3();
       gun.getWorldPosition(gunWorldPos);
       
-      const raycaster = new THREE.Raycaster(gunWorldPos, forward, 0.5, 100);
+      const raycaster = new THREE.Raycaster(gunWorldPos, gunWorldDir, 0.5, 100);
       const enemyMeshes = STATE.enemies.map(e => e.mesh);
       const intersects = raycaster.intersectObjects(enemyMeshes, true);
       
@@ -883,10 +883,10 @@
       }
       
       // マズルフラッシュ（シーン用）
-      createMuzzleFlash(gunWorldPos, forward);
+      createMuzzleFlash(gunWorldPos, gunWorldDir);
       
       // トレーサー
-      const target = intersects.length > 0 ? intersects[0].point : gunWorldPos.clone().add(forward.clone().multiplyScalar(50));
+      const target = intersects.length > 0 ? intersects[0].point : gunWorldPos.clone().add(gunWorldDir.clone().multiplyScalar(50));
       createTracer(gunWorldPos, target);
     }
     
