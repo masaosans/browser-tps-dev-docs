@@ -742,18 +742,17 @@
       // --- ★右腕（武器側）---
       const aimAngleTarget = camDir ? Math.max(0, -camDir.y) * 1.2 : 0;
       
-      // ★射撃構え: FIRE長押しで腕をpositionで前方に押し出す★
-      // rotationではなくpositionで動かす → 銃身は前を向いたまま
+      // ★射撃構え: FIRE長押しでrotation.xを上げて腕を前に出す★
       const firingStanceTarget = isFiringFlag ? 1.0 : 0.0;
       
       rightArmPivot.rotation.x = walkSwing - aimAngleTarget + swayY * strength 
-        - shootKickback * 0.5;
+        - shootKickback * 0.5 + firingStanceTarget * 0.8;
       rightArmPivot.rotation.z = -swayX * strength * 0.5;
       
-      // ★positionで腕を前方に押し出す（rotationではない）★
+      // ★positionはベース位置に固定（rotationで腕を動かす）★
       rightArmPivot.position.x = RIGHT_ARM_BASE_X + armExtend * Math.cos(cameraYaw);
-      rightArmPivot.position.y = 1.6 - firingStanceTarget * 0.3; // 少し下に下げる
-      rightArmPivot.position.z = armExtend * Math.sin(cameraYaw) - firingStanceTarget * 0.5; // 前方に伸ばす
+      rightArmPivot.position.y = 1.6;
+      rightArmPivot.position.z = armExtend * Math.sin(cameraYaw);
       
       // --- 左腕（バランス用）---
       if (isMoving) {
