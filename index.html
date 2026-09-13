@@ -401,46 +401,38 @@
     const rightArmPivot = new THREE.Group();
     rightArmPivot.position.set(0.55, 1.6, 0);
     
-    // ★右腕（CapsuleGeometry）- 下方向に伸びる
-    const rightArmGeo = new THREE.CapsuleGeometry(0.1, 0.6, 4, 8);
-    const rightArmMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50 });
-    const rightArmMesh = new THREE.Mesh(rightArmGeo, rightArmMat);
-    rightArmMesh.position.y = -0.3; // ピボットから下
-    rightArmMesh.castShadow = true;
-    rightArmPivot.add(rightArmMesh);
-    
-    // ★拳銃（持ち手 + 銃身）★
+    // ★拳銃を右腕ピボットに直接配置（腕メッシュの子ではない）★
     const gunGroup = new THREE.Group();
     
     // グリップ（持ち手）- 縦向き、手が握る部分
     const gripGeo = new THREE.BoxGeometry(0.12, 0.35, 0.1);
     const gripMat = new THREE.MeshStandardMaterial({ color: 0x2c2c2c, roughness: 0.6 });
     const grip = new THREE.Mesh(gripGeo, gripMat);
-    grip.position.set(0, -0.17, 0); // ピボットから下（手が握る位置）
     gunGroup.add(grip);
     
     // バレル（銃身）- グリップ上部から-Z方向（前方）へ突き出す
     const barrelGeo = new THREE.BoxGeometry(0.08, 0.08, 0.45);
     const barrelMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.3, metalness: 0.7 });
     const barrel = new THREE.Mesh(barrelGeo, barrelMat);
-    barrel.position.set(0, 0.12, -0.25); // グリップ上部から前方へ
+    barrel.position.set(0, 0.25, -0.25); // グリップ上部から前方へ
     gunGroup.add(barrel);
     
     // スライド（バレル上面的なカバー）
     const slideGeo = new THREE.BoxGeometry(0.09, 0.06, 0.4);
     const slideMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.3, metalness: 0.8 });
     const slide = new THREE.Mesh(slideGeo, slideMat);
-    slide.position.set(0, 0.17, -0.25);
+    slide.position.set(0, 0.25, -0.25);
     gunGroup.add(slide);
     
     // マズルフラッシュ用ポイントライト（バレルの先端）
     const muzzleLight = new THREE.PointLight(0xffaa44, 0, 5);
-    muzzleLight.position.set(0, 0.12, -0.48); // バレルの先
+    muzzleLight.position.set(0, 0.25, -0.48); // バレルの先
     gunGroup.add(muzzleLight);
     
-    // ★拳銃を右腕メッシュの子に配置（腕の先端）★
-    gunGroup.position.set(0, -0.6, 0); // 腕の下端
-    rightArmMesh.add(gunGroup);
+    // ★拳銃を腕の下端に配置★
+    gunGroup.position.set(0, -0.6, 0); // 腕の先端
+    
+    rightArmPivot.add(gunGroup);
     
     playerGroup.add(rightArmPivot);
     
