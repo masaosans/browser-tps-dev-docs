@@ -350,8 +350,11 @@
     // ★アニメーション用パラメータ★
     let walkCycle = 0;
     const WALK_SPEED = 12; // 歩行速度
-    let aimAngle = 0; // ★射撃時の腕の角度（スムーズに動かす）★
     let isMovingFlag = false; // ★ウェポンスウェイ用: 移動状態を共有★
+    
+    // ★射撃モーション用★
+    let shootKickback = 0;   // 射撃時の腕のキックバック（0→1→0）
+    const SHOOT_KICKBACK_SPEED = 25; // キックバック速度
     
     // === 胴体（ヒップジョイント）===
     const bodyGeo = new THREE.CapsuleGeometry(0.4, 1.2, 4, 8);
@@ -596,8 +599,8 @@
       camera.lookAt(lookTarget);
       
       // リコイル回転（垂直+水平）— lookAt()の後に追加
-      camera.rotateX(-recoilVertical * 0.02); // 上方向スナップ（逆符号）
-      camera.rotateY(recoilHorizontal * 0.015); // 左右スパッド
+      camera.rotateX(-recoilVertical * 0.15); // 上方向スナップ（大きく）
+      camera.rotateY(recoilHorizontal * 0.1); // 左右スパッド（大きく）
       
       // カメラリコイル回復（毎フレーム少しずつ戻す）
       recoilVertical *= Math.pow(0.3, delta);
@@ -605,7 +608,7 @@
     }
 
     // ============================================================
-    // プレイヤー移動（地形追従付き）
+    // プレイヤー移動（地形追従付き）— 腕は別関数で管理
     // ============================================================
     let playerRotationTarget = 0;
     const ROTATION_SPEED = 8;
@@ -650,20 +653,16 @@
       const terrainY = getTerrainHeight(playerGroup.position.x, playerGroup.position.z);
       playerGroup.position.y = terrainY + 0.2;
       
-      // ★アニメーション更新（移動中のみ）★
+      // ★脚アニメーション（移動中のみ）★
       if (isMoving) {
         walkCycle += delta * WALK_SPEED;
         
-        // 歩行アニメーション（正弦波で腕と足を振る）
+        // 歩行アニメーション（正弦波で足を振る）
         const swingAngle = Math.sin(walkCycle) * 0.5; // 最大28度
         
         // 左足・右足（交互に振る）
         leftLegPivot.rotation.x = swingAngle;
         rightLegPivot.rotation.x = -swingAngle;
-        
-        // 左腕・右腕（歩行時は足を逆方向に振る）
-        leftArmPivot.rotation.x = -swingAngle * 0.8;
-        rightArmPivot.rotation.x = swingAngle * 0.8;
         
         // ボディの上下動（歩行時のバウンド）
         body.position.y = 1.2 + Math.abs(Math.sin(walkCycle)) * 0.05;
@@ -673,30 +672,68 @@
         
         leftLegPivot.rotation.x *= 0.9;
         rightLegPivot.rotation.x *= 0.9;
-        leftArmPivot.rotation.x *= 0.9;
-        rightArmPivot.rotation.x *= 0.9;
         
         body.position.y += (1.2 - body.position.y) * 0.1;
       }
+    }
+    
+    // ============================================================
+    // ★腕アニメーション統合（歩行 + ADS + 射撃キックバック + スウェイ）★
+    // ============================================================
+    function updateArmAnimation(delta, camDir) {
+      const isMoving = isMovingFlag;
       
-      // ★射撃時の腕のアニメーション（常に適用）★
-      // カメラが上を向いていたら、腕も一緒に上げる
-      const camForward = new THREE.Vector3();
-      camera.getWorldDirection(camForward);
-      const aimTarget = Math.max(0, -camForward.y) * 1.2; // 上向きなら腕を上げる
-      
-      // スムーズにaimAngleを追従（Lerp）
-      aimAngle += (aimTarget - aimAngle) * 5 * delta;
-      
-      // ★右腕の回転: 歩行アニメーション + 射撃時の上げ上げ★
+      // --- 歩行スイング ---
       const walkSwing = isMoving ? Math.sin(walkCycle) * 0.5 : 0;
-      rightArmPivot.rotation.x = walkSwing - aimAngle; // 上向きならさらに上げる
       
-      // 左腕も少し動かす（バランス用）
+      // --- ADS構え方 ---
+      const armExtend = currentAimBlend * 0.3; // 最大0.3だけ前に
+      
+      // --- 射撃キックバック（毎フレーム更新）---
+      if (shootKickback > 0) {
+        shootKickback -= SHOOT_KICKBACK_SPEED * delta;
+        if (shootKickback < 0) shootKickback = 0;
+      }
+      
+      // --- ウェポンスウェイ ---
+      swayTime += delta;
+      const isMovingNow = joystickInput.forward || joystickInput.back || joystickInput.left || joystickInput.right;
+      const moveFactor = isMovingNow ? 1.0 : 0.0;
+      
+      const swayX = (Math.sin(swayTime * 1.3) * 0.5 + Math.sin(swayTime * 0.7) * 0.5);
+      const swayY = (Math.cos(swayTime * 1.1) * 0.5 + Math.cos(swayTime * 0.9) * 0.5);
+      
+      let strength;
+      if (currentAimBlend > 0.7) {
+        strength = SWAY_AIM_STRENGTH;
+      } else if (moveFactor > 0) {
+        strength = SWAY_MOVE_STRENGTH;
+      } else {
+        strength = SWAY_IDLE_STRENGTH;
+      }
+      
+      // --- 右腕（武器側）---
+      // 歩行スイング + ADS構え + 射撃キックバック + スウェイ を合成
+      const aimAngleTarget = camDir ? Math.max(0, -camDir.y) * 1.2 : 0;
+      
+      rightArmPivot.rotation.x = walkSwing - aimAngleTarget + swayY * strength - shootKickback * 0.5;
+      rightArmPivot.rotation.z = -swayX * strength * 0.5;
+      
+      // ADS時は腕を前に押し出す
+      rightArmPivot.position.x = 0.55 + armExtend * Math.cos(cameraYaw);
+      rightArmPivot.position.z = armExtend * Math.sin(cameraYaw);
+      
+      if (currentAimBlend < 0.1) {
+        rightArmPivot.position.x += (0.55 - rightArmPivot.position.x) * 3 * delta;
+        rightArmPivot.position.z *= (1 - 2 * delta);
+      }
+      
+      // --- 左腕（バランス用）---
       if (isMoving) {
-        leftArmPivot.rotation.x = -walkSwing * 0.8;
+        leftArmPivot.rotation.x = -walkSwing * 0.8 + swayY * strength * 0.3;
       } else {
         leftArmPivot.rotation.x *= 0.9;
+        leftArmPivot.rotation.z = swayX * strength * 0.2;
       }
     }
 
@@ -800,6 +837,9 @@
       // ★リコイル適用★
       recoilVertical += WEAPON.RECOIL_AMOUNT * (0.8 + Math.random() * 0.4); // ランダム性
       recoilHorizontal += (Math.random() - 0.5) * WEAPON.RECOIL_AMOUNT * 0.6;
+      
+      // ★腕のキックバック（射撃モーション）★
+      shootKickback = 1.0;
       
       // ★マズルフラッシュ（ライト点灯）★
       muzzleLight.intensity = 8;
@@ -1118,13 +1158,13 @@
       
       const delta = Math.min(clock.getDelta(), 0.1);
       
-      // ★カメラの真正面ベクトル（ウェポンスウェイ用）★
+      // ★カメラの真正面ベクトル（腕アニメーション用）★
       const camForward = new THREE.Vector3();
       camera.getWorldDirection(camForward);
       
       updatePlayer(delta);
       updateAimBlend(delta);
-      updateWeaponSway(delta, camForward, isMovingFlag);
+      updateArmAnimation(delta, camForward); // 腕アニメーション統合関数
       updateRecoil(delta);
       updateReloadAnimation(delta);
       updateCamera(delta); // リコイル適用済みで呼び出し
