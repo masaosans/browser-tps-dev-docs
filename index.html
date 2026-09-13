@@ -422,7 +422,7 @@
     grip.position.set(0, -0.17, 0); // ピボットから下（手が握る位置）
     gunGroup.add(grip);
     
-    // バレル（銃身）- 横向き、前方向（-Z）、弾が出る筒
+    // バレル（銃身）- グリップ上部から前へ突き出す
     const barrelGeo = new THREE.BoxGeometry(0.08, 0.08, 0.45);
     const barrelMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.3, metalness: 0.7 });
     const barrel = new THREE.Mesh(barrelGeo, barrelMat);
@@ -440,6 +440,10 @@
     const muzzleLight = new THREE.PointLight(0xffaa44, 0, 5);
     muzzleLight.position.set(0, 0.12, -0.48); // バレルの先
     gunGroup.add(muzzleLight);
+    
+    // ★拳銃の初期回転: グリップを握った状態でバレルが前を向くように★
+    // rotation.x = Math.PI/2 で90度回転 → 縦のグリップに対して横のバレルが-Z方向（前方）を向く
+    gunGroup.rotation.x = Math.PI / 2;
     
     rightHand.add(gunGroup);
     
