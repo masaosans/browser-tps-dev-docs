@@ -355,6 +355,7 @@
     // ★射撃モーション用★
     let shootKickback = 0;   // 射撃時の腕のキックバック（0→1→0）
     const SHOOT_KICKBACK_SPEED = 25; // キックバック速度
+    let isFiringFlag = false; // ★射撃構え用: FIRE長押し状態★
     
     // === 胴体（ヒップジョイント）===
     const bodyGeo = new THREE.CapsuleGeometry(0.4, 1.2, 4, 8);
@@ -678,7 +679,7 @@
     }
     
     // ============================================================
-    // ★腕アニメーション統合（歩行 + ADS + 射撃キックバック + スウェイ）★
+    // ★腕アニメーション統合（歩行 + ADS + 射撃構え + キックバック + スウェイ）★
     // ============================================================
     function updateArmAnimation(delta, camDir) {
       const isMoving = isMovingFlag;
@@ -712,12 +713,20 @@
         strength = SWAY_IDLE_STRENGTH;
       }
       
-      // --- 右腕（武器側）---
-      // 歩行スイング + ADS構え + 射撃キックバック + スウェイ を合成
+      // --- ★射撃構え（FIRE長押しで腕を前に上げる）★---
+      const firingStanceTarget = isFiringFlag ? 1.0 : 0.0;
+      let firingStanceBlend = firingStanceTarget; // 即座に切り替え
+      
+      // 右腕のベース回転（歩行 + ADS + スウェイ）
       const aimAngleTarget = camDir ? Math.max(0, -camDir.y) * 1.2 : 0;
       
-      rightArmPivot.rotation.x = walkSwing - aimAngleTarget + swayY * strength - shootKickback * 0.5;
-      rightArmPivot.rotation.z = -swayX * strength * 0.5;
+      // ★射撃構え: 腕を前に上げつつ、少し上に傾ける★
+      // firingStance=1 のとき: rotation.x += 0.8（前に上げる）, rotation.z -= 0.3（銃口を前に向ける）
+      const stanceX = firingStanceBlend * 0.8;    // 前に上げる角度
+      const stanceZ = -firingStanceBlend * 0.4;   // 銃口を前に傾ける
+      
+      rightArmPivot.rotation.x = walkSwing - aimAngleTarget + swayY * strength - shootKickback * 0.5 + stanceX;
+      rightArmPivot.rotation.z = -swayX * strength * 0.5 + stanceZ;
       
       // ADS時は腕を前に押し出す
       rightArmPivot.position.x = 0.55 + armExtend * Math.cos(cameraYaw);
@@ -734,6 +743,15 @@
       } else {
         leftArmPivot.rotation.x *= 0.9;
         leftArmPivot.rotation.z = swayX * strength * 0.2;
+      }
+      
+      // ★射撃構え時は左腕も前に出す（両手で支える）★
+      if (firingStanceBlend > 0) {
+        leftArmPivot.position.x += firingStanceBlend * 0.15; // 前に出す
+        leftArmPivot.rotation.z = -firingStanceBlend * 0.2;   // 内側に寄せる
+      } else {
+        leftArmPivot.position.x *= (1 - 3 * delta);
+        leftArmPivot.rotation.z *= (1 - 4 * delta);
       }
     }
 
@@ -1110,8 +1128,8 @@
     let isFiring = false;
     
     const fireBtn = document.getElementById('fire-btn');
-    fireBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); isFiring = true; shoot(); }, { passive: false });
-    fireBtn.addEventListener('pointerup', () => { isFiring = false; });
+    fireBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); isFiring = true; isFiringFlag = true; shoot(); }, { passive: false });
+    fireBtn.addEventListener('pointerup', () => { isFiring = false; isFiringFlag = false; });
     
     setInterval(() => {
       if (isFiring && STATE.isPlaying && !STATE.isGameOver) shoot();
