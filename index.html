@@ -437,6 +437,9 @@
     muzzleLight.position.set(0, 0.25, 0.48); // バレルの先（+Z）
     gunGroup.add(muzzleLight);
     
+    // ★拳銃の初期回転: バレルを水平に★
+    gunGroup.rotation.x = Math.PI / 2;
+    
     // ★拳銃を右腕メッシュの子に配置（腕の先端）★
     gunGroup.position.set(0, -0.6, 0); // 腕の下端
     rightArmMesh.add(gunGroup);
