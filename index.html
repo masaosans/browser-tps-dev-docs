@@ -890,7 +890,7 @@
       }
       
       // ★右腕にスウェイを適用（歩行・射撃アニメーションと合成）★
-      const walkSwing = isMoving ? Math.sin(walkCycle) * 0.5 : 0;
+      const walkSwing = isMovingNow ? Math.sin(walkCycle) * 0.5 : 0;
       const aimAngleTarget = camDir ? Math.max(0, -camDir.y) * 1.2 : 0;
       aimAngle += (aimAngleTarget - aimAngle) * 5 * delta;
       
@@ -911,7 +911,7 @@
       }
       
       // 左腕もスウェイ適用（バランス用）
-      if (isMoving) {
+      if (isMovingNow) {
         leftArmPivot.rotation.x = -walkSwing * 0.8 + swayY * strength * 0.3;
       } else {
         leftArmPivot.rotation.x *= 0.9;
