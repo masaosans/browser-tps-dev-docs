@@ -718,18 +718,23 @@
       }
       
       // --- ★右腕（武器側）---
-      // カメラの向きに応じた基本角度
       const aimAngleTarget = camDir ? Math.max(0, -camDir.y) * 1.2 : 0;
       
-      // ★射撃構え: FIRE長押しで腕を前に上げる★
-      // 小さい値（0.3rad = 17度）に抑えて、腕が飛ばないように
+      // ★射撃構え: FIRE長押しで腕を前に大きく上げる★
+      // Isosceles stance: 両腕を伸ばして顔の前に銃を持ってくる
       const firingStanceTarget = isFiringFlag ? 1.0 : 0.0;
       
-      rightArmPivot.rotation.x = walkSwing - aimAngleTarget + swayY * strength - shootKickback * 0.3 + firingStanceTarget * 0.3;
-      rightArmPivot.rotation.z = -swayX * strength * 0.5 - firingStanceTarget * 0.15;
+      // rotation.x > 0 で上方向に回転（腕を前に上げる）
+      // 実際の射撃姿勢では腕を顔の前に持ってくるので大きく回転させる
+      rightArmPivot.rotation.x = walkSwing - aimAngleTarget + swayY * strength - shootKickback * 0.5 
+        + firingStanceTarget * 1.2;  // 69度前に上げる
+      
+      // rotation.z で銃口を前に向ける（Weaver stance: 非優勢腕で引き寄せる）
+      rightArmPivot.rotation.z = -swayX * strength * 0.5 
+        - firingStanceTarget * 0.3;  // 銃口を前に傾ける
       
       // ★右腕position: 毎フレームベース位置に戻す（累積しない）★
-      rightArmPivot.position.x = RIGHT_ARM_BASE_X + armExtend * Math.cos(cameraYaw);
+      rightArmPivot.position.x = RIGHT_ARM_BASE_X + armExtend * Math.cos(cameraYaw) + firingStanceTarget * 0.15;
       rightArmPivot.position.z = armExtend * Math.sin(cameraYaw);
       
       // --- 左腕（バランス用）---
@@ -740,8 +745,14 @@
         leftArmPivot.rotation.z = swayX * strength * 0.2;
       }
       
-      // ★左腕position: 毎フレームリセット★
-      leftArmPivot.position.x += ( -0.55 - leftArmPivot.position.x) * 3 * delta;
+      // ★射撃構え時は左腕も前に出す（両手で銃を持つ）★
+      if (firingStanceTarget > 0) {
+        leftArmPivot.position.x += firingStanceTarget * 0.3; // 前に出す
+        leftArmPivot.rotation.z = -firingStanceTarget * 0.4; // 内側に寄せる（両手で支える）
+      } else {
+        leftArmPivot.position.x *= (1 - 3 * delta);
+        leftArmPivot.rotation.z *= (1 - 4 * delta);
+      }
     }
 
     // ============================================================
