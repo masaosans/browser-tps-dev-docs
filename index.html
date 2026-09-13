@@ -351,6 +351,7 @@
     let walkCycle = 0;
     const WALK_SPEED = 12; // 歩行速度
     let aimAngle = 0; // ★射撃時の腕の角度（スムーズに動かす）★
+    let isMovingFlag = false; // ★ウェポンスウェイ用: 移動状態を共有★
     
     // === 胴体（ヒップジョイント）===
     const bodyGeo = new THREE.CapsuleGeometry(0.4, 1.2, 4, 8);
@@ -594,9 +595,9 @@
       const lookTarget = playerGroup.position.clone().add(new THREE.Vector3(0, 1.5, 0));
       camera.lookAt(lookTarget);
       
-      // リコイル回転（垂直+水平）
-      camera.rotation.x += recoilVertical * 0.02; // 上方向スナップ
-      camera.rotation.y += recoilHorizontal * 0.015; // 左右スパッド
+      // リコイル回転（垂直+水平）— lookAt()の後に追加
+      camera.rotateX(-recoilVertical * 0.02); // 上方向スナップ（逆符号）
+      camera.rotateY(recoilHorizontal * 0.015); // 左右スパッド
       
       // カメラリコイル回復（毎フレーム少しずつ戻す）
       recoilVertical *= Math.pow(0.3, delta);
@@ -627,6 +628,9 @@
       if (joystickInput.left) moveDir.sub(right);
       
       const isMoving = moveDir.length() > 0;
+      
+      // ★ウェポンスウェイ用に移動状態を共有★
+      isMovingFlag = isMoving;
       
       if (isMoving) {
         moveDir.normalize();
@@ -866,10 +870,9 @@
     }
     
     // ★ウェポンスウェイ更新★
-    function updateWeaponSway(delta, camDir) {
+    function updateWeaponSway(delta, camDir, isMovingNow) {
       swayTime += delta;
       
-      const isMovingNow = joystickInput.forward || joystickInput.back || joystickInput.left || joystickInput.right;
       const moveFactor = isMovingNow ? 1.0 : 0.0;
       
       // Perlin Noise風スウェイ（2つのサイン波を合成）
@@ -1121,7 +1124,7 @@
       
       updatePlayer(delta);
       updateAimBlend(delta);
-      updateWeaponSway(delta, camForward);
+      updateWeaponSway(delta, camForward, isMovingFlag);
       updateRecoil(delta);
       updateReloadAnimation(delta);
       updateCamera(delta); // リコイル適用済みで呼び出し
