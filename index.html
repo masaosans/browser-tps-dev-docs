@@ -400,17 +400,14 @@
     // 右腕（武器を持つ側）
     const rightArmPivot = new THREE.Group();
     rightArmPivot.position.set(0.55, 1.6, 0);
-    const rightArm = new THREE.Mesh(armGeo, armMat);
-    rightArm.position.y = -0.3;
-    rightArm.castShadow = true;
-    rightArmPivot.add(rightArm);
     
-    // ★右手メッシュ（銃の保持位置を正確に）★
-    const handGeo = new THREE.SphereGeometry(0.1, 6, 6);
-    const handMat = new THREE.MeshStandardMaterial({ color: 0x34495e });
-    const rightHand = new THREE.Mesh(handGeo, handMat);
-    rightHand.position.set(0, -0.6, -0.2);
-    rightArm.add(rightHand);
+    // ★右腕（CapsuleGeometry）- 下方向に伸びる
+    const rightArmGeo = new THREE.CapsuleGeometry(0.1, 0.6, 4, 8);
+    const rightArmMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50 });
+    const rightArmMesh = new THREE.Mesh(rightArmGeo, rightArmMat);
+    rightArmMesh.position.y = -0.3; // ピボットから下
+    rightArmMesh.castShadow = true;
+    rightArmPivot.add(rightArmMesh);
     
     // ★拳銃（持ち手 + 銃身）★
     const gunGroup = new THREE.Group();
@@ -422,30 +419,29 @@
     grip.position.set(0, -0.17, 0); // ピボットから下（手が握る位置）
     gunGroup.add(grip);
     
-    // バレル（銃身）- グリップ上部から前へ突き出す
-    const barrelGeo = new THREE.BoxGeometry(0.08, 0.08, 0.45);
+    // バレル（銃身）- グリップ上部から横へ突き出す
+    const barrelGeo = new THREE.BoxGeometry(0.45, 0.08, 0.08);
     const barrelMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.3, metalness: 0.7 });
     const barrel = new THREE.Mesh(barrelGeo, barrelMat);
-    barrel.position.set(0, 0.12, -0.25); // グリップ上部から前へ
+    barrel.position.set(0.25, 0.12, 0); // グリップ右横（前方）
     gunGroup.add(barrel);
     
     // スライド（バレル上面的なカバー）
-    const slideGeo = new THREE.BoxGeometry(0.09, 0.06, 0.4);
+    const slideGeo = new THREE.BoxGeometry(0.4, 0.06, 0.09);
     const slideMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.3, metalness: 0.8 });
     const slide = new THREE.Mesh(slideGeo, slideMat);
-    slide.position.set(0, 0.17, -0.25);
+    slide.position.set(0.25, 0.17, 0);
     gunGroup.add(slide);
     
     // マズルフラッシュ用ポイントライト（バレルの先端）
     const muzzleLight = new THREE.PointLight(0xffaa44, 0, 5);
-    muzzleLight.position.set(0, 0.12, -0.48); // バレルの先
+    muzzleLight.position.set(0.48, 0.12, 0); // バレルの先
     gunGroup.add(muzzleLight);
     
     // ★拳銃の初期回転: グリップを握った状態でバレルが前を向くように★
-    // rotation.x = Math.PI/2 で90度回転 → 縦のグリップに対して横のバレルが-Z方向（前方）を向く
     gunGroup.rotation.x = Math.PI / 2;
     
-    rightHand.add(gunGroup);
+    rightArmPivot.add(gunGroup);
     
     playerGroup.add(rightArmPivot);
     
@@ -874,8 +870,8 @@
       muzzleLight.intensity = 8;
       
       // ★銃のワールド方向を取得してレイキャスト（カメラの向きではなく銃口方向）★
-      const gunWorldDir = new THREE.Vector3(0, 0, -1);
-      gunWorldDir.applyQuaternion(rightArm.getWorldQuaternion(new THREE.Quaternion()));
+      const gunWorldDir = new THREE.Vector3(1, 0, 0); // バレルは+X方向を向く
+      gunWorldDir.applyQuaternion(rightArmPivot.getWorldQuaternion(new THREE.Quaternion()));
       
       // ADS時は少し補正（照準中央に合わせる）
       if (currentAimBlend > 0.5) {
