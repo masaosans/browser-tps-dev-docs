@@ -963,7 +963,8 @@
         gunReloadRotation = Math.sin(t * Math.PI) * -1.2;
       }
       
-      gunGroup.rotation.x = gunReloadRotation;
+      // ★初期回転(PI/2)にリロード回転を追加★
+      gunGroup.rotation.x = Math.PI / 2 + gunReloadRotation;
     }
     
     function createHitEffect(position) {
