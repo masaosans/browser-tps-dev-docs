@@ -438,10 +438,9 @@
     muzzleLight.position.set(0, 0.12, -0.48); // バレルの先
     gunGroup.add(muzzleLight);
     
-    // ★拳銃を右腕の下端に配置★
-    gunGroup.position.set(0, -0.6, 0); // 腕の先端
-    
-    rightArmPivot.add(gunGroup);
+    // ★拳銃を右腕メッシュの子に配置（腕の先端）★
+    gunGroup.position.set(0, -0.6, 0); // 腕の下端
+    rightArmMesh.add(gunGroup);
     
     playerGroup.add(rightArmPivot);
     
