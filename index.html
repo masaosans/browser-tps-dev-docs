@@ -493,14 +493,27 @@
         
         const group = new THREE.Group();
         
-        // 胴体（不規則な形状）- カクカクした形状に
+        // 胴体（不規則な形状）- 岩と同様に半径方向に変形
         const bodyGeo = new THREE.IcosahedronGeometry(0.5, 4);
         const positions = bodyGeo.attributes.position;
         for (let i = 0; i < positions.count; i++) {
-          const x = positions.getX(i), y = positions.getY(i), z = positions.getZ(i);
-          // ノイズを小さくして隙間を減らす
-          const noise = Math.random() * 0.05;
-          positions.setXYZ(i, x+(Math.random()-0.5)*noise, y+(Math.random()-0.5)*noise, z+(Math.random()-0.5)*noise);
+          const px = positions.getX(i), py = positions.getY(i), pz = positions.getZ(i);
+          
+          // 3層のノイズを合成（岩と同様）
+          const n1 = Math.sin(px * 2.5 + pz * 1.7) * Math.cos(py * 2.0) * 0.1;
+          const n2 = Math.sin(px * 5.0 - py * 3.0) * Math.cos(pz * 4.0) * 0.05;
+          const n3 = Math.sin(px * 10.0 + pz * 8.0) * Math.cos(py * 9.0) * 0.02;
+          
+          // 半径方向に変形（岩と同様）
+          const displacement = (n1 + n2 + n3) * 0.5;
+          const length = Math.sqrt(px*px + py*py + pz*pz);
+          if (length > 0) {
+            positions.setXYZ(i, 
+              px + (px/length) * displacement,
+              py + (py/length) * displacement * 0.7, // Y軸は少し潰す
+              pz + (pz/length) * displacement
+            );
+          }
         }
         bodyGeo.computeVertexNormals();
         
