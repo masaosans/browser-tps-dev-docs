@@ -751,6 +751,9 @@
       rightArmPivot.position.y = 1.6;
       rightArmPivot.position.z = armExtend * Math.sin(cameraYaw);
       
+      // ★拳銃の向きを毎フレーム固定（バレルが前方を向く）★
+      gunGroup.rotation.x = Math.PI / 2;
+      
       // --- 左腕（バランス用）---
       if (isMoving) {
         leftArmPivot.rotation.x = -walkSwing * 0.8 + swayY * strength * 0.3;
