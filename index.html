@@ -493,8 +493,8 @@
         
         const group = new THREE.Group();
         
-        // 胴体（不規則な形状）
-        const bodyGeo = new THREE.IcosahedronGeometry(0.5, 1);
+        // 胴体（不規則な形状）- セグメント数を増やして滑らかに
+        const bodyGeo = new THREE.IcosahedronGeometry(0.5, 4);
         const positions = bodyGeo.attributes.position;
         for (let i = 0; i < positions.count; i++) {
           const x = positions.getX(i), y = positions.getY(i), z = positions.getZ(i);
