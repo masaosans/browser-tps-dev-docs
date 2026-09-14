@@ -739,14 +739,14 @@
       // --- ★右腕（武器側）---
       const aimAngleTarget = camDir ? Math.max(0, -camDir.y) * 1.2 : 0;
       
-      // ★射撃構え: FIRE長押しでposition.zを前に伸ばす★
-      const firingStanceTarget = isFiringFlag ? 0.5 : 0.0;
+      // ★射撃構え: FIRE長押しで肩ピボットを回転（position.zはADS時のみ）★
+      const firingStanceTarget = isFiringFlag ? 1.0 : 0.0;
       
       rightArmPivot.rotation.x = walkSwing - aimAngleTarget + swayY * strength 
-        - shootKickback * 0.5 + firingStanceTarget * 0.8;
+        - shootKickback * 0.5 + firingStanceTarget * 1.2;
       rightArmPivot.rotation.z = -swayX * strength * 0.5;
       
-      // ★positionはベース位置に固定（rotationで腕を動かす）★
+      // ★positionはADS時のみ（射撃構えでは変更しない）★
       rightArmPivot.position.x = RIGHT_ARM_BASE_X + armExtend * Math.cos(cameraYaw);
       rightArmPivot.position.y = 1.6;
       rightArmPivot.position.z = armExtend * Math.sin(cameraYaw);
