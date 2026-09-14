@@ -84,11 +84,12 @@
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
   <script type="importmap">
-  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js" } }
+  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/" } }
   </script>
   
   <script type="module">
     import * as THREE from 'three';
+    import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 
     // ============================================================
     // ゲーム状態
@@ -515,6 +516,9 @@
             );
           }
         }
+        
+        // ★頂点変形後にマージ（隙間解消）★
+        bodyGeo = mergeVertices(bodyGeo, 0.01);
         bodyGeo.computeVertexNormals();
         
         const color = type==='basic' ? 0xe74c3c : 0x9b59b6;
