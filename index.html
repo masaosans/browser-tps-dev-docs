@@ -498,14 +498,18 @@
         const positions = bodyGeo.attributes.position;
         for (let i = 0; i < positions.count; i++) {
           const x = positions.getX(i), y = positions.getY(i), z = positions.getZ(i);
-          // ノイズを小さくして隙間を減らす
-          const noise = Math.random() * 0.05;
-          positions.setXYZ(i, x+(Math.random()-0.5)*noise, y+(Math.random()-0.5)*noise, z+(Math.random()-0.5)*noise);
+          // ノイズを削除して隙間を解消
+          positions.setXYZ(i, x, y, z);
         }
         bodyGeo.computeVertexNormals();
         
         const color = type==='basic' ? 0xe74c3c : 0x9b59b6;
-        const bodyMat = new THREE.MeshStandardMaterial({ color, roughness: 0.8, metalness: 0.2 });
+        const bodyMat = new THREE.MeshStandardMaterial({ 
+          color, 
+          roughness: 0.8, 
+          metalness: 0.2,
+          flatShading: false // スムーズシェーディングで隙間を消す
+        });
         const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
         bodyMesh.position.y = 1.2;
         bodyMesh.castShadow = true;
