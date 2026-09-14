@@ -609,7 +609,7 @@
       currentZoom += (targetZoom - currentZoom) * 0.1;
       
       const camX = playerGroup.position.x + Math.sin(cameraYaw) * currentZoom;
-      const camZ = playerGroup.position.z + Math.cos(cameraYaw) * currentZoom;
+      const camZ = playerGroup.position.z - Math.cos(cameraYaw) * currentZoom;
       const heightOffset = Math.tan(cameraPitch) * currentZoom;
       const baseCamY = playerGroup.position.y + SPRING_ARM.HEIGHT + heightOffset;
       
