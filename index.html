@@ -873,9 +873,9 @@
       // ★マズルフラッシュ（ライト点灯）★
       muzzleLight.intensity = 8;
       
-      // ★銃のワールド方向を取得してレイキャスト（カメラの向きではなく銃口方向）★
-      const gunWorldDir = new THREE.Vector3(0, 0, -1);
-      gunWorldDir.applyQuaternion(rightArmPivot.getWorldQuaternion(new THREE.Quaternion()));
+      // ★銃のワールド方向を取得してレイキャスト（バレルの真正面）★
+      const gunWorldDir = new THREE.Vector3(0, 0, 1); // +Z方向がバレルの向き
+      gunWorldDir.applyQuaternion(gunGroup.getWorldQuaternion(new THREE.Quaternion()));
       
       // ADS時は少し補正（照準中央に合わせる）
       if (currentAimBlend > 0.5) {
