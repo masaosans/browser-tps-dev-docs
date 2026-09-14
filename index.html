@@ -755,10 +755,10 @@
         - shootKickback * 0.5 - firingStanceTarget * 1.2; // 前に上げる（符号反転）
       rightArmPivot.rotation.z = -swayX * strength * 0.5;
       
-      // ★positionはADS時のみ（射撃構えでは変更しない）★
+      // ★positionは固定（ADS時のみX座標変更）★
       rightArmPivot.position.x = RIGHT_ARM_BASE_X + armExtend * Math.cos(cameraYaw);
       rightArmPivot.position.y = 1.6;
-      rightArmPivot.position.z = armExtend * Math.sin(cameraYaw);
+      rightArmPivot.position.z = 0; // カメラ回転に関係なく固定
       
       // ★拳銃の向きを毎フレーム固定（バレルが前方を向く）★
       gunGroup.rotation.x = Math.PI / 2;
