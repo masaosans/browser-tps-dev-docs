@@ -914,7 +914,7 @@
       const gunWorldPos = new THREE.Vector3(0, 0.25, 0.71); // バレル先端のローカル座標
       gunWorldPos.applyMatrix4(gunGroup.matrixWorld);
       
-      const raycaster = new THREE.Raycaster(gunWorldPos, gunWorldDir, 0.5, 100);
+      const raycaster = new THREE.Raycaster(gunWorldPos, gunWorldDir, 0, 100);
       const enemyMeshes = STATE.enemies.map(e => e.mesh);
       const intersects = raycaster.intersectObjects(enemyMeshes, true);
       
