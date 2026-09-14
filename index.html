@@ -743,7 +743,7 @@
       const firingStanceTarget = isFiringFlag ? 1.0 : 0.0;
       
       rightArmPivot.rotation.x = walkSwing - aimAngleTarget + swayY * strength 
-        - shootKickback * 0.5 + firingStanceTarget * 1.2;
+        - shootKickback * 0.5 - firingStanceTarget * 1.2; // 前に上げる（符号反転）
       rightArmPivot.rotation.z = -swayX * strength * 0.5;
       
       // ★positionはADS時のみ（射撃構えでは変更しない）★
