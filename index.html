@@ -409,32 +409,41 @@
     rightArmMesh.castShadow = true;
     rightArmPivot.add(rightArmMesh);
     
-    // ★拳銃（持ち手 + 銃身）★
+    // ★拳銃（持ち手 + 銃身）★ - Glock風デザイン
     const gunGroup = new THREE.Group();
     
-    // グリップ（持ち手）- 縦向き、手が握る部分
-    const gripGeo = new THREE.BoxGeometry(0.12, 0.35, 0.1);
-    const gripMat = new THREE.MeshStandardMaterial({ color: 0x2c2c2c, roughness: 0.6 });
+    // グリップ（持ち手）- 縦向き、手が握る部分（傾斜付き）
+    const gripGeo = new THREE.BoxGeometry(0.14, 0.38, 0.12);
+    const gripMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.7 });
     const grip = new THREE.Mesh(gripGeo, gripMat);
+    grip.position.set(0, -0.15, 0); // グリップの中心位置
     gunGroup.add(grip);
     
-    // バレル（銃身）- グリップ上部から+Z方向（前方）へ突き出す
-    const barrelGeo = new THREE.BoxGeometry(0.08, 0.08, 0.45);
-    const barrelMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.3, metalness: 0.7 });
-    const barrel = new THREE.Mesh(barrelGeo, barrelMat);
-    barrel.position.set(0, 0.25, 0.48); // グリップ上部から前方へ（+Z）
-    gunGroup.add(barrel);
-    
-    // スライド（バレル上面的なカバー）
-    const slideGeo = new THREE.BoxGeometry(0.09, 0.06, 0.4);
+    // スライド（上面カバー）- バレルを包み込むように配置
+    const slideGeo = new THREE.BoxGeometry(0.13, 0.12, 0.48);
     const slideMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.3, metalness: 0.8 });
     const slide = new THREE.Mesh(slideGeo, slideMat);
-    slide.position.set(0, 0.25, 0.48);
+    slide.position.set(0, 0.15, 0.24); // グリップ上部から前方へ
+    
+    // スライド上面の溝（装飾）
+    const grooveGeo = new THREE.BoxGeometry(0.135, 0.01, 0.46);
+    const grooveMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.2, metalness: 0.9 });
+    const groove = new THREE.Mesh(grooveGeo, grooveMat);
+    groove.position.set(0, 0.215, 0.24); // スライド上面
+    
     gunGroup.add(slide);
+    gunGroup.add(groove);
+    
+    // バレル（銃口）- スライド前面から突き出す
+    const barrelGeo = new THREE.CylinderGeometry(0.035, 0.035, 0.12, 8);
+    const barrelMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.2, metalness: 0.9 });
+    const barrel = new THREE.Mesh(barrelGeo, barrelMat);
+    barrel.rotation.x = Math.PI / 2; // Z軸方向に向ける
+    barrel.position.set(0, 0.15, 0.48); // スライド前面
     
     // マズルフラッシュ用ポイントライト（バレルの先端）
     const muzzleLight = new THREE.PointLight(0xffaa44, 0, 5);
-    muzzleLight.position.set(0, 0.25, 0.71); // バレルの先（+Z）
+    muzzleLight.position.set(0, 0.15, 0.54); // バレルの先
     gunGroup.add(muzzleLight);
     
     // ★拳銃の初期回転: バレルを水平に★
