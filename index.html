@@ -521,8 +521,7 @@
         const bodyMat = new THREE.MeshStandardMaterial({ 
           color, 
           roughness: 0.8, 
-          metalness: 0.2,
-          flatShading: false // スムーズシェーディングで隙間を消す
+          metalness: 0.2
         });
         const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
         bodyMesh.position.y = 1.2;
