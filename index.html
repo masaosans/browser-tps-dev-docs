@@ -493,13 +493,14 @@
         
         const group = new THREE.Group();
         
-        // 胴体（不規則な形状）- セグメント数を大幅に増やして滑らかに
-        const bodyGeo = new THREE.IcosahedronGeometry(0.5, 8);
+        // 胴体（不規則な形状）- カクカクした形状に
+        const bodyGeo = new THREE.IcosahedronGeometry(0.5, 4);
         const positions = bodyGeo.attributes.position;
         for (let i = 0; i < positions.count; i++) {
           const x = positions.getX(i), y = positions.getY(i), z = positions.getZ(i);
-          // ノイズを削除して隙間を解消
-          positions.setXYZ(i, x, y, z);
+          // ノイズを小さくして隙間を減らす
+          const noise = Math.random() * 0.05;
+          positions.setXYZ(i, x+(Math.random()-0.5)*noise, y+(Math.random()-0.5)*noise, z+(Math.random()-0.5)*noise);
         }
         bodyGeo.computeVertexNormals();
         
