@@ -89,7 +89,6 @@
   
   <script type="module">
     import * as THREE from 'three';
-    import { BufferGeometryUtils } from 'three/addons/utils/BufferGeometryUtils.js';
 
     // ============================================================
     // ゲーム状態
@@ -516,9 +515,6 @@
             );
           }
         }
-        
-        // ★頂点変形後にマージ（隙間解消）★
-        bodyGeo = BufferGeometryUtils.mergeVertices(bodyGeo, 0.01);
         bodyGeo.computeVertexNormals();
         
         const color = type==='basic' ? 0xe74c3c : 0x9b59b6;
