@@ -498,7 +498,8 @@
         const positions = bodyGeo.attributes.position;
         for (let i = 0; i < positions.count; i++) {
           const x = positions.getX(i), y = positions.getY(i), z = positions.getZ(i);
-          const noise = Math.random() * 0.15;
+          // ノイズを小さくして隙間を減らす
+          const noise = Math.random() * 0.05;
           positions.setXYZ(i, x+(Math.random()-0.5)*noise, y+(Math.random()-0.5)*noise, z+(Math.random()-0.5)*noise);
         }
         bodyGeo.computeVertexNormals();
