@@ -422,19 +422,19 @@
     const barrelGeo = new THREE.BoxGeometry(0.08, 0.08, 0.45);
     const barrelMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.3, metalness: 0.7 });
     const barrel = new THREE.Mesh(barrelGeo, barrelMat);
-    barrel.position.set(0, 0.25, 0.25); // グリップ上部から前方へ（+Z）
+    barrel.position.set(0, 0.25, 0.48); // グリップ上部から前方へ（+Z）
     gunGroup.add(barrel);
     
     // スライド（バレル上面的なカバー）
     const slideGeo = new THREE.BoxGeometry(0.09, 0.06, 0.4);
     const slideMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.3, metalness: 0.8 });
     const slide = new THREE.Mesh(slideGeo, slideMat);
-    slide.position.set(0, 0.25, 0.25);
+    slide.position.set(0, 0.25, 0.48);
     gunGroup.add(slide);
     
     // マズルフラッシュ用ポイントライト（バレルの先端）
     const muzzleLight = new THREE.PointLight(0xffaa44, 0, 5);
-    muzzleLight.position.set(0, 0.25, 0.48); // バレルの先（+Z）
+    muzzleLight.position.set(0, 0.25, 0.71); // バレルの先（+Z）
     gunGroup.add(muzzleLight);
     
     // ★拳銃の初期回転: バレルを水平に★
