@@ -618,6 +618,11 @@
         this.mesh.children[0].material.emissive.setHex(0xffffff);
         setTimeout(() => this.mesh.children[0].material.emissive.setHex(0x000000), 100);
         
+        // ★ダメージを受けたら敵が気づく（patrol→chase）★
+        if (this.state === 'patrol') {
+          this.state = 'chase';
+        }
+        
         if (this.health <= 0) {
           scene.remove(this.mesh);
           const i = STATE.enemies.indexOf(this);
