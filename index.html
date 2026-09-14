@@ -746,7 +746,7 @@
       }
       
       // --- ★右腕（武器側）---
-      const aimAngleTarget = camDir ? Math.max(0, -camDir.y) * 1.2 : 0;
+      const aimAngleTarget = 0; // カメラ視点に関係なく固定
       
       // ★射撃構え: FIRE長押しで肩ピボットを回転（position.zはADS時のみ）★
       const firingStanceTarget = isFiringFlag ? 1.0 : 0.0;
