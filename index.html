@@ -449,8 +449,8 @@
     // ★拳銃の初期回転: バレルを水平に★
     gunGroup.rotation.x = Math.PI / 2;
     
-    // ★拳銃を左腕メッシュの子に配置（腕の先端）★
-    gunGroup.position.set(0, -0.6, 0); // 腕の下端
+    // ★拳銃を左腕メッシュの先端に配置（手が握る位置）★
+    gunGroup.position.set(0, -0.45, 0.15); // 腕下端(y=-0.6)でグリップが手に接 + バレル寄り
     leftArmMesh.add(gunGroup);
     
     playerGroup.add(leftArmPivot);
