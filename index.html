@@ -357,8 +357,8 @@
     const SHOOT_KICKBACK_SPEED = 25; // キックバック速度
     let isFiringFlag = false; // ★射撃構え用: FIRE長押し状態★
     
-    // ★右腕のベース位置（固定）★
-    const RIGHT_ARM_BASE_X = 0.55;
+    // ★左腕（武器側）のベース位置★
+    const LEFT_ARM_BASE_X = 0.35;
     const RIGHT_ARM_BASE_Z = 0;
     
     // === 胴体（ヒップジョイント）===
@@ -385,29 +385,29 @@
     playerGroup.add(visor);
     
     // === 腕（肩ジョイント）===
-    const leftArmPivot = new THREE.Group();
-    leftArmPivot.position.set(-0.55, 1.6, 0);
+    const rightArmPivot = new THREE.Group();
+    rightArmPivot.position.set(-0.55, 1.6, 0);
     const armGeo = new THREE.CapsuleGeometry(0.1, 0.6, 4, 8);
     const armMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50 });
     
-    // 左腕
-    const leftArm = new THREE.Mesh(armGeo, armMat);
-    leftArm.position.y = -0.3;
-    leftArm.castShadow = true;
-    leftArmPivot.add(leftArm);
-    playerGroup.add(leftArmPivot);
+    // 右腕（非武器側）
+    const rightArm = new THREE.Mesh(armGeo, armMat);
+    rightArm.position.y = -0.3;
+    rightArm.castShadow = true;
+    rightArmPivot.add(rightArm);
+    playerGroup.add(rightArmPivot);
     
-    // 右腕（武器を持つ側）
-    const rightArmPivot = new THREE.Group();
-    rightArmPivot.position.set(0.35, 1.6, 0);
+    // 左腕（武器を持つ側）
+    const leftArmPivot = new THREE.Group();
+    leftArmPivot.position.set(0.35, 1.6, 0);
     
-    // ★右腕（CapsuleGeometry）- 下方向に伸びる
-    const rightArmGeo = new THREE.CapsuleGeometry(0.1, 0.6, 4, 8);
-    const rightArmMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50 });
-    const rightArmMesh = new THREE.Mesh(rightArmGeo, rightArmMat);
-    rightArmMesh.position.y = -0.3; // ピボットから下
-    rightArmMesh.castShadow = true;
-    rightArmPivot.add(rightArmMesh);
+    // ★左腕（CapsuleGeometry）- 下方向に伸びる
+    const leftArmGeo = new THREE.CapsuleGeometry(0.1, 0.6, 4, 8);
+    const leftArmMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50 });
+    const leftArmMesh = new THREE.Mesh(leftArmGeo, leftArmMat);
+    leftArmMesh.position.y = -0.3; // ピボットから下
+    leftArmMesh.castShadow = true;
+    leftArmPivot.add(leftArmMesh);
     
     // ★拳銃（持ち手 + 銃身）★ - Glock風デザイン
     const gunGroup = new THREE.Group();
@@ -449,11 +449,11 @@
     // ★拳銃の初期回転: バレルを水平に★
     gunGroup.rotation.x = Math.PI / 2;
     
-    // ★拳銃を右腕メッシュの子に配置（腕の先端）★
+    // ★拳銃を左腕メッシュの子に配置（腕の先端）★
     gunGroup.position.set(0, -0.6, 0); // 腕の下端
-    rightArmMesh.add(gunGroup);
+    leftArmMesh.add(gunGroup);
     
-    playerGroup.add(rightArmPivot);
+    playerGroup.add(leftArmPivot);
     
     // === 脚（腰ジョイント）===
     const leftLegPivot = new THREE.Group();
@@ -770,34 +770,34 @@
         strength = SWAY_IDLE_STRENGTH;
       }
       
-      // --- ★右腕（武器側）---
+      // --- ★左腕（武器側）---
       const aimAngleTarget = 0; // カメラ視点に関係なく固定
       
       // ★射撃構え: FIRE長押しで肩ピボットを回転（position.zはADS時のみ）★
       const firingStanceTarget = isFiringFlag ? 1.0 : 0.0;
       
-      rightArmPivot.rotation.x = walkSwing - aimAngleTarget + swayY * strength 
+      leftArmPivot.rotation.x = walkSwing - aimAngleTarget + swayY * strength 
         - shootKickback * 0.5 - firingStanceTarget * 1.5; // 前に上げる（符号反転）
-      rightArmPivot.rotation.z = -swayX * strength * 0.5;
+      leftArmPivot.rotation.z = -swayX * strength * 0.5;
       
       // ★positionは固定（ADS時のみX座標変更）★
-      rightArmPivot.position.x = RIGHT_ARM_BASE_X + armExtend * Math.cos(cameraYaw);
-      rightArmPivot.position.y = 1.6;
-      rightArmPivot.position.z = 0; // カメラ回転に関係なく固定
+      leftArmPivot.position.x = LEFT_ARM_BASE_X + armExtend * Math.cos(cameraYaw);
+      leftArmPivot.position.y = 1.6;
+      leftArmPivot.position.z = 0; // カメラ回転に関係なく固定
       
       // ★拳銃の向きを毎フレーム固定（バレルが前方を向く）★
       gunGroup.rotation.x = Math.PI / 2;
       
-      // --- 左腕（バランス用）---
+      // --- 右腕（バランス用・非武器側）---
       if (isMoving) {
-        leftArmPivot.rotation.x = -walkSwing * 0.8 + swayY * strength * 0.3;
+        rightArmPivot.rotation.x = -walkSwing * 0.8 + swayY * strength * 0.3;
       } else {
-        leftArmPivot.rotation.x *= 0.9;
-        leftArmPivot.rotation.z = swayX * strength * 0.2;
+        rightArmPivot.rotation.x *= 0.9;
+        rightArmPivot.rotation.z = swayX * strength * 0.2;
       }
       
-      // ★左腕position: 毎フレームベース位置に戻す（累積しない）★
-      leftArmPivot.position.x += (-0.55 - leftArmPivot.position.x) * 3 * delta;
+      // ★右腕position: 毎フレームベース位置に戻す（累積しない）★
+      rightArmPivot.position.x += (-0.55 - rightArmPivot.position.x) * 3 * delta;
     }
 
     // ============================================================
