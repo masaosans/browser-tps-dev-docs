@@ -695,13 +695,15 @@
         moveDir.normalize();
         playerGroup.position.addScaledVector(moveDir, speed * delta);
         
-        // ★滑らかに回転（即座に向かない）★
+        // ★滑らかに回転（lerpで微細な角度調整に対応）★
         const targetAngle = Math.atan2(moveDir.x, moveDir.z);
         let angleDiff = targetAngle - playerRotationTarget;
         if (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
         if (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
         
-        playerRotationTarget += angleDiff * ROTATION_SPEED * delta;
+        // lerpで毎フレーム15%ずつ目標角度に近づける（小さな角度差も正確に追従）
+        const lerpFactor = 0.15;
+        playerRotationTarget += angleDiff * lerpFactor;
         playerGroup.rotation.y = playerRotationTarget;
       }
       
