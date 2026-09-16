@@ -235,6 +235,11 @@
     createGrassField();
 
     // ============================================================
+    // ★障害物管理配列（衝突判定用）★
+    // ============================================================
+    const obstacles = [];
+
+    // ============================================================
     // ★岩（PBR）★
     // ============================================================
     function createRock(x, z) {
@@ -277,6 +282,10 @@
       rock.castShadow = true;
       rock.receiveShadow = true;
       scene.add(rock);
+      
+      // ★衝突判定用★
+      rock.collisionRadius = size;
+      obstacles.push(rock);
     }
 
     for (let i = 0; i < 30; i++) {
@@ -337,6 +346,10 @@
       
       building.position.set(x, avgY, z); // ★傾斜対応済み★
       scene.add(building);
+      
+      // ★衝突判定用★
+      building.collisionRadius = halfSize;
+      obstacles.push(building);
     }
 
     createBuilding(-20, -20);
@@ -561,6 +574,9 @@
         this.mesh = group;
         this.state = 'patrol';
         this.attackCooldown = 0;
+        
+        // ★衝突判定用★
+        this.collisionRadius = 0.6;
       }
       
       canSeePlayer() {
@@ -594,7 +610,24 @@
           } else {
             const dir = new THREE.Vector3().subVectors(playerGroup.position, this.mesh.position).normalize();
             dir.y = 0;
-            this.mesh.position.addScaledVector(dir, this.speed * delta);
+            
+            // ★敵の移動先座標★
+            const newX = this.mesh.position.x + dir.x * this.speed * delta;
+            const newZ = this.mesh.position.z + dir.z * this.speed * delta;
+            
+            // ★衝突チェック（岩・建物）★
+            if (!checkCollision({x: newX, z: newZ}, this.collisionRadius)) {
+              this.mesh.position.x = newX;
+              this.mesh.position.z = newZ;
+            } else {
+              // 衝突 → スライディング
+              if (!checkCollision({x: newX, z: this.mesh.position.z}, this.collisionRadius)) {
+                this.mesh.position.x = newX;
+              } else if (!checkCollision({x: this.mesh.position.x, z: newZ}, this.collisionRadius)) {
+                this.mesh.position.z = newZ;
+              }
+            }
+            
             this.mesh.lookAt(new THREE.Vector3(playerGroup.position.x, 0, playerGroup.position.z));
           }
         } else if (this.state === 'attack') {
@@ -664,6 +697,22 @@
     }
 
     // ============================================================
+    // ★衝突判定関数（スフィア距離二乗比較）★
+    // ============================================================
+    const PLAYER_RADIUS = 0.5; // プレイヤーの衝突半径
+    
+    function checkCollision(pos, radius) {
+      for (const obj of obstacles) {
+        const dx = pos.x - obj.position.x;
+        const dz = pos.z - obj.position.z;
+        if (dx*dx + dz*dz < (radius + obj.collisionRadius)**2) {
+          return true; // 衝突
+        }
+      }
+      return false; // 安全
+    }
+
+    // ============================================================
     // プレイヤー移動（地形追従付き）— 腕は別関数で管理
     // ============================================================
     let playerRotationTarget = 0;
@@ -693,7 +742,24 @@
       
       if (isMoving) {
         moveDir.normalize();
-        playerGroup.position.addScaledVector(moveDir, speed * delta);
+        
+        // 移動先の座標を計算
+        const newX = playerGroup.position.x + moveDir.x * speed * delta;
+        const newZ = playerGroup.position.z + moveDir.z * speed * delta;
+        
+        // ★衝突チェック★
+        if (!checkCollision({x: newX, z: newZ}, PLAYER_RADIUS)) {
+          // 安全 → 移動
+          playerGroup.position.x = newX;
+          playerGroup.position.z = newZ;
+        } else {
+          // 衝突 → スライディング（XまたはZのみ）
+          if (!checkCollision({x: newX, z: playerGroup.position.z}, PLAYER_RADIUS)) {
+            playerGroup.position.x = newX;
+          } else if (!checkCollision({x: playerGroup.position.x, z: newZ}, PLAYER_RADIUS)) {
+            playerGroup.position.z = newZ;
+          }
+        }
         
         // ★滑らかに回転（lerpで微細な角度調整に対応）★
         const targetAngle = Math.atan2(moveDir.x, moveDir.z);
