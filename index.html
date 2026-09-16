@@ -1384,6 +1384,9 @@
       STATE.playerHealth = 100;
       STATE.score = 0;
       STATE.wave = 1;
+      
+      // ★既存敵をsceneから削除してから配列を空にする★
+      for (const enemy of STATE.enemies) scene.remove(enemy.mesh);
       STATE.enemies = [];
       
       WEAPON.AMMO_CURRENT = WEAPON.AMMO_MAX;
@@ -1392,8 +1395,6 @@
       playerGroup.position.set(0, getTerrainHeight(0, 0) + 0.2, 0);
       cameraYaw = 0;
       cameraPitch = 0;
-      
-      for (const enemy of STATE.enemies) scene.remove(enemy.mesh);
       
       updateHPBar();
       updateScoreDisplay();
