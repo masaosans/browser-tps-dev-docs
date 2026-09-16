@@ -872,9 +872,10 @@
       leftArmPivot.position.z = 0; // カメラ回転に関係なく固定
       
       // ★拳銃の向きを毎フレーム固定（バレルが前方を向く）★
-      gunGroup.rotation.x = Math.PI / 2;
-      
-      // --- 右腕（バランス用・非武器側）---
+      // ★タッチパッドで腕の回転を変更 → 銃口と弾丸方向が自動追従★
+      const baseGunRotX = Math.PI / 2; // バレル水平の基本角度
+      gunGroup.rotation.x = baseGunRotX - aimOffsetY * 0.5; // 上下（タッチパッドY）
+      gunGroup.rotation.z = aimOffsetX * 0.3; // 左右（タッチパッドX）
       if (isMoving) {
         rightArmPivot.rotation.x = -walkSwing * 0.8 + swayY * strength * 0.3;
       } else {
@@ -995,12 +996,6 @@
       
       // ★銃のワールド方向を取得してレイキャスト（バレルの真正面）★
       const gunWorldDir = new THREE.Vector3(0, 0, 1); // +Z方向がバレルの向き
-      
-      // ★FIREボタンタッチパッドで照準微調整★
-      if (aimOffsetX !== 0 || aimOffsetY !== 0) {
-        gunWorldDir.x += aimOffsetX * 0.3; // 左右
-        gunWorldDir.y += aimOffsetY * 0.15; // 上下（上=正）
-      }
       
       gunWorldDir.applyQuaternion(gunGroup.getWorldQuaternion(new THREE.Quaternion()));
       
