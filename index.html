@@ -871,11 +871,12 @@
       leftArmPivot.position.y = 1.6;
       leftArmPivot.position.z = 0; // カメラ回転に関係なく固定
       
-      // ★拳銃の向きを毎フレーム固定（バレルが前方を向く）★
-      // ★タッチパッドで腕の回転を変更 → 銃口と弾丸方向が自動追従★
-      const baseGunRotX = Math.PI / 2; // バレル水平の基本角度
-      gunGroup.rotation.x = baseGunRotX - aimOffsetY * 0.5; // 上下（タッチパッドY）
-      gunGroup.rotation.z = aimOffsetX * 0.3; // 左右（タッチパッドX）
+      // ★タッチパッドで腕の回転を変更 → 拳銃と弾丸が自動追従★
+      const aimRotX = aimOffsetY * 0.5; // 上下（タッチパッドY）
+      const aimRotZ = -aimOffsetX * 0.3; // 左右（タッチパッドX）
+      
+      leftArmPivot.rotation.x += aimRotX;
+      leftArmPivot.rotation.z += aimRotZ;
       if (isMoving) {
         rightArmPivot.rotation.x = -walkSwing * 0.8 + swayY * strength * 0.3;
       } else {
