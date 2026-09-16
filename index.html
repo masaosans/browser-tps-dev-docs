@@ -348,7 +348,7 @@
       scene.add(building);
       
       // ★衝突判定用★
-      building.collisionRadius = halfSize;
+      building.halfWidth = halfSize; // AABBの半分の幅（X/Z方向）
       obstacles.push(building);
     }
 
@@ -697,16 +697,36 @@
     }
 
     // ============================================================
-    // ★衝突判定関数（スフィア距離二乗比較）★
+    // ★衝突判定関数（スフィア + AABB対応）★
     // ============================================================
     const PLAYER_RADIUS = 0.5; // プレイヤーの衝突半径
     
     function checkCollision(pos, radius) {
       for (const obj of obstacles) {
-        const dx = pos.x - obj.position.x;
-        const dz = pos.z - obj.position.z;
-        if (dx*dx + dz*dz < (radius + obj.collisionRadius)**2) {
-          return true; // 衝突
+        if (obj.halfWidth !== undefined) {
+          // ★建物（AABB）: Circle vs AABBアルゴリズム★
+          const halfW = obj.halfWidth;
+          const boxX = obj.position.x;
+          const boxZ = obj.position.z;
+          
+          // AABB内部で円に最も近い点
+          const closestX = Math.max(boxX - halfW, Math.min(pos.x, boxX + halfW));
+          const closestZ = Math.max(boxZ - halfW, Math.min(pos.z, boxZ + halfW));
+          
+          // 円の中心からその点までの距離
+          const dx = pos.x - closestX;
+          const dz = pos.z - closestZ;
+          
+          if (dx*dx + dz*dz < radius * radius) {
+            return true; // 衝突
+          }
+        } else {
+          // ★岩・敵（スフィア）: 距離二乗比較★
+          const dx = pos.x - obj.position.x;
+          const dz = pos.z - obj.position.z;
+          if (dx*dx + dz*dz < (radius + obj.collisionRadius)**2) {
+            return true; // 衝突
+          }
         }
       }
       return false; // 安全
