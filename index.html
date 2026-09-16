@@ -995,6 +995,13 @@
       
       // ★銃のワールド方向を取得してレイキャスト（バレルの真正面）★
       const gunWorldDir = new THREE.Vector3(0, 0, 1); // +Z方向がバレルの向き
+      
+      // ★FIREボタンタッチパッドで照準微調整★
+      if (aimOffsetX !== 0 || aimOffsetY !== 0) {
+        gunWorldDir.x += aimOffsetX * 0.3; // 左右
+        gunWorldDir.y += aimOffsetY * 0.15; // 上下（上=正）
+      }
+      
       gunWorldDir.applyQuaternion(gunGroup.getWorldQuaternion(new THREE.Quaternion()));
       
       // ADS時は少し補正（照準中央に合わせる）
@@ -1209,9 +1216,55 @@
     // ============================================================
     let isFiring = false;
     
+    // ★FIREボタン: タッチパッド機能（照準微調整）★
+    let firePadActive = false;
+    let firePadStartX = 0, firePadStartY = 0;
+    let aimOffsetX = 0, aimOffsetY = 0; // 照準オフセット（-1〜1）
+    const AIM_PAD_SENSITIVITY = 0.02; // タッチパッド感度
+    
     const fireBtn = document.getElementById('fire-btn');
-    fireBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); isFiring = true; isFiringFlag = true; shoot(); }, { passive: false });
-    fireBtn.addEventListener('pointerup', () => { isFiring = false; isFiringFlag = false; });
+    
+    fireBtn.addEventListener('pointerdown', (e) => { 
+      e.preventDefault(); 
+      isFiring = true; 
+      isFiringFlag = true; 
+      shoot();
+      
+      // 初期タッチ位置を記録（タッチパッド開始）
+      const rect = fireBtn.getBoundingClientRect();
+      firePadStartX = e.clientX - rect.left;
+      firePadStartY = e.clientY - rect.top;
+      firePadActive = true;
+    }, { passive: false });
+    
+    // タッチパッド移動（ボタン内でのドラッグ）
+    fireBtn.addEventListener('pointermove', (e) => { 
+      if (!firePadActive) return;
+      e.preventDefault();
+      
+      const rect = fireBtn.getBoundingClientRect();
+      const dx = (e.clientX - rect.left) - firePadStartX;
+      const dy = (e.clientY - rect.top) - firePadStartY;
+      
+      // 感度をかけて-1〜1の範囲に制限
+      aimOffsetX = Math.max(-1, Math.min(1, dx * AIM_PAD_SENSITIVITY));
+      aimOffsetY = Math.max(-1, Math.min(1, dy * AIM_PAD_SENSITIVITY));
+    }, { passive: false });
+    
+    fireBtn.addEventListener('pointerup', (e) => { 
+      e.preventDefault();
+      isFiring = false; 
+      isFiringFlag = false; 
+      firePadActive = false;
+      
+      // タッチ離れでオフセットリセット（少し遅延）
+      setTimeout(() => { aimOffsetX = 0; aimOffsetY = 0; }, 200);
+    });
+    
+    fireBtn.addEventListener('pointerleave', () => { 
+      firePadActive = false;
+      aimOffsetX = 0; aimOffsetY = 0;
+    });
     
     setInterval(() => {
       if (isFiring && STATE.isPlaying && !STATE.isGameOver) shoot();
