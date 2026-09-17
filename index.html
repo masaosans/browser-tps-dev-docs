@@ -200,6 +200,123 @@
     const terrainMesh = createTerrain();
 
     // ============================================================
+    // ★Phase 1: 水面シェーダー（波アニメーション + Fresnel反射）★
+    // ============================================================
+    
+    // 水面のVertex Shader（正弦波で頂点を動かす）
+    const waterVertShader = `
+      uniform float uTime;
+      varying vec2 vUv;
+      varying vec3 vNormal;
+      varying vec3 vViewPos;
+      
+      void main() {
+        vUv = uv;
+        
+        // 波の計算（複数の正弦波を合成）
+        vec3 pos = position;
+        float wave1 = sin(pos.x * 2.0 + uTime) * 0.05;
+        float wave2 = sin(pos.y * 1.5 + uTime * 0.8) * 0.03;
+        float wave3 = sin((pos.x + pos.y) * 3.0 + uTime * 1.2) * 0.02;
+        
+        // Z軸（元はY）に波の高さを加算
+        pos.z += wave1 + wave2 + wave3;
+        
+        // 法線を簡易計算（隣接頂点の差分から）
+        float dx = cos(pos.x * 2.0 + uTime) * 2.0 * 0.05 
+                  + cos((pos.x + pos.y) * 3.0 + uTime * 1.2) * 3.0 * 0.02;
+        float dy = cos(pos.y * 1.5 + uTime * 0.8) * 1.5 * 0.03 
+                  + cos((pos.x + pos.y) * 3.0 + uTime * 1.2) * 3.0 * 0.02;
+        vNormal = normalize(vec3(-dx, -dy, 1.0));
+        
+        vec4 mvPos = modelViewMatrix * vec4(pos, 1.0);
+        vViewPos = mvPos.xyz;
+        gl_Position = projectionMatrix * mvPos;
+      }
+    `;
+    
+    // 水面のFragment Shader（半透明 + Fresnel反射）
+    const waterFragShader = `
+      uniform float uTime;
+      uniform vec3 uWaterColor;
+      uniform vec3 uSkyColor;
+      varying vec2 vUv;
+      varying vec3 vNormal;
+      varying vec3 vViewPos;
+      
+      void main() {
+        // 視点ベクトル
+        vec3 viewDir = normalize(-vViewPos);
+        
+        // Fresnel効果（見る角度によって反射率を変える）
+        float fresnel = pow(1.0 - max(dot(viewDir, vNormal), 0.0), 3.0);
+        
+        // 基本の色（水色）
+        vec3 waterColor = uWaterColor;
+        
+        // 波の動きで色を微妙に変化
+        float foam = sin(vUv.x * 20.0 + uTime) * cos(vUv.y * 15.0 + uTime * 0.7);
+        waterColor += vec3(foam * 0.05);
+        
+        // Fresnel反射で空の色を混ぜる
+        vec3 reflectColor = mix(waterColor, uSkyColor, fresnel * 0.5);
+        
+        // 透明度（Fresnelが高いほど透明に→反射が見える）
+        float alpha = mix(0.6, 0.9, fresnel);
+        
+        gl_FragColor = vec4(reflectColor, alpha);
+      }
+    `;
+    
+    // 水面メッシュ生成関数（低洼地ごとに配置）
+    function createWaterSurface(x, z, radius) {
+      const waterGeo = new THREE.PlaneGeometry(radius * 2, radius * 2, 32, 32);
+      waterGeo.rotateX(-Math.PI / 2); // 水平に
+      
+      const waterMat = new THREE.ShaderMaterial({
+        uniforms: {
+          uTime: { value: 0 },
+          uWaterColor: { value: new THREE.Color(0x4682B4) }, // 水色
+          uSkyColor: { value: new THREE.Color(0x87CEEB) }    // 空の色
+        },
+        vertexShader: waterVertShader,
+        fragmentShader: waterFragShader,
+        transparent: true,
+        side: THREE.DoubleSide,
+        depthWrite: false // 透明オブジェクトは深度書き込み不要
+      });
+      
+      const water = new THREE.Mesh(waterGeo, waterMat);
+      water.position.set(x, -1.45, z); // 地形より少し上（波の振幅分）
+      scene.add(water);
+      return water;
+    }
+    
+    // ★低洼地を検出して水面メッシュを配置★
+    const waterSurfaces = [];
+    
+    // 簡易低洼地検出: y < -1.5 の領域をグリッドでスキャン
+    function scanWaterAreas() {
+      const gridSize = 20; // グリッドサイズ
+      const halfSize = TERRAIN_SIZE / 2;
+      
+      for (let gx = -halfSize; gx < halfSize; gx += gridSize) {
+        for (let gz = -halfSize; gz < halfSize; gz += gridSize) {
+          // グリッド中心の高さを取得
+          const centerY = getTerrainHeight(gx, gz);
+          
+          if (centerY < -1.5) {
+            // 水たまりとして判定 → 水面メッシュを配置
+            const water = createWaterSurface(gx, gz, gridSize * 0.8);
+            waterSurfaces.push(water);
+          }
+        }
+      }
+    }
+    
+    scanWaterAreas();
+
+    // ============================================================
     // ★草フィールド（InstancedMesh）★
     // ============================================================
     function createGrassField() {
@@ -1317,6 +1434,11 @@
       updateRecoil(delta);
       updateReloadAnimation(delta);
       updateCamera(delta); // リコイル適用済みで呼び出し
+      
+      // ★水面シェーダーの時間更新★
+      for (const water of waterSurfaces) {
+        water.material.uniforms.uTime.value += delta;
+      }
       
       for (const enemy of STATE.enemies) enemy.update(delta);
       
