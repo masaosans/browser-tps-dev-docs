@@ -209,6 +209,7 @@
       varying vec2 vUv;
       varying vec3 vNormal;
       varying vec3 vViewPos;
+      varying vec3 vWorldPos;
       
       void main() {
         vUv = uv;
@@ -229,6 +230,9 @@
                   + cos((pos.x + pos.y) * 3.0 + uTime * 1.2) * 3.0 * 0.02;
         vNormal = normalize(vec3(-dx, -dy, 1.0));
         
+        // ★World座標を変数に保存（Fragment Shaderでvarying経由で使用）★
+        vWorldPos = position;
+        
         vec4 mvPos = modelViewMatrix * vec4(pos, 1.0);
         vViewPos = mvPos.xyz;
         gl_Position = projectionMatrix * mvPos;
@@ -243,6 +247,7 @@
       varying vec2 vUv;
       varying vec3 vNormal;
       varying vec3 vViewPos;
+      varying vec3 vWorldPos;
       
       void main() {
         // 視点ベクトル
@@ -251,8 +256,8 @@
         // Fresnel効果（見る角度によって反射率を変える）
         float fresnel = pow(1.0 - max(dot(viewDir, vNormal), 0.0), 3.0);
         
-        // ★World座標ベースの色変化（メッシュ境界で切り替わらない）★
-        vec3 worldPos = position;
+        // ★Vertex Shaderからvarying経由で受け取ったWorld座標★
+        vec3 worldPos = vWorldPos;
         
         // 複数のsin波を合成して自然な濃淡（時間変化付き）
         float n1 = sin(worldPos.x * 0.4 + worldPos.y * 0.3) * 0.5 + 0.5;
