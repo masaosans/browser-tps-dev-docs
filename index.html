@@ -203,7 +203,7 @@
     // ★Phase 1: 水面シェーダー（波アニメーション + Fresnel反射）★
     // ============================================================
     
-    // 水面のVertex Shader（正弦波で頂点を動かす）
+    // 水面のVertex Shader（正弦波で頂点を動かす - 穏やかな波）
     const waterVertShader = `
       uniform float uTime;
       varying vec2 vUv;
@@ -214,20 +214,20 @@
       void main() {
         vUv = uv;
         
-        // 波の計算（複数の正弦波を合成）
+        // 波の計算（複数の正弦波を合成 - 穏やかな水面）
         vec3 pos = position;
-        float wave1 = sin(pos.x * 2.0 + uTime) * 0.05;
-        float wave2 = sin(pos.y * 1.5 + uTime * 0.8) * 0.03;
-        float wave3 = sin((pos.x + pos.y) * 3.0 + uTime * 1.2) * 0.02;
+        float wave1 = sin(pos.x * 2.0 + uTime) * 0.03;
+        float wave2 = sin(pos.y * 1.5 + uTime * 0.8) * 0.02;
+        float wave3 = sin((pos.x + pos.y) * 3.0 + uTime * 1.2) * 0.015;
         
         // Z軸（元はY）に波の高さを加算
         pos.z += wave1 + wave2 + wave3;
         
         // 法線を簡易計算（隣接頂点の差分から）
-        float dx = cos(pos.x * 2.0 + uTime) * 2.0 * 0.05 
-                  + cos((pos.x + pos.y) * 3.0 + uTime * 1.2) * 3.0 * 0.02;
-        float dy = cos(pos.y * 1.5 + uTime * 0.8) * 1.5 * 0.03 
-                  + cos((pos.x + pos.y) * 3.0 + uTime * 1.2) * 3.0 * 0.02;
+        float dx = cos(pos.x * 2.0 + uTime) * 2.0 * 0.03 
+                  + cos((pos.x + pos.y) * 3.0 + uTime * 1.2) * 3.0 * 0.015;
+        float dy = cos(pos.y * 1.5 + uTime * 0.8) * 1.5 * 0.02 
+                  + cos((pos.x + pos.y) * 3.0 + uTime * 1.2) * 3.0 * 0.015;
         vNormal = normalize(vec3(-dx, -dy, 1.0));
         
         // ★World座標を変数に保存（Fragment Shaderでvarying経由で使用）★
@@ -239,7 +239,7 @@
       }
     `;
     
-    // 水面のFragment Shader（半透明 + Fresnel反射 + World座標ベースの色変化）
+    // 水面のFragment Shader（簡易PBR + 穏やかな色合い）
     const waterFragShader = `
       uniform float uTime;
       uniform vec3 uWaterColor;
@@ -253,33 +253,33 @@
         // 視点ベクトル
         vec3 viewDir = normalize(-vViewPos);
         
-        // Fresnel効果（見る角度によって反射率を変える）
-        float fresnel = pow(1.0 - max(dot(viewDir, vNormal), 0.0), 3.0);
+        // ★Fresnel効果（見る角度によって反射率を変える）- 強化版★
+        float fresnel = pow(1.0 - max(dot(viewDir, vNormal), 0.0), 4.0);
         
-        // ★Vertex Shaderからvarying経由で受け取ったWorld座標★
+        // ★World座標ベースの色変化（メッシュ境界で切り替わらない）★
         vec3 worldPos = vWorldPos;
         
-        // 複数のsin波を合成して自然な濃淡（時間変化付き）
+        // 複数のsin波を合成して自然な濃淡（時間変化付き - ゆっくりした動き）
         float n1 = sin(worldPos.x * 0.4 + worldPos.y * 0.3) * 0.5 + 0.5;
-        float n2 = sin(worldPos.x * 0.7 - uTime * 0.15) * sin(worldPos.y * 0.5 + uTime * 0.1) * 0.5 + 0.5;
+        float n2 = sin(worldPos.x * 0.7 - uTime * 0.1) * sin(worldPos.y * 0.5 + uTime * 0.08) * 0.5 + 0.5;
         float noiseVal = (n1 + n2) * 0.5; // 0〜1
         
-        // ノイズで水深を表現（深い場所ほど濃い色）
-        vec3 deepColor = vec3(0.1, 0.3, 0.6);   // 深い水の色
-        vec3 shallowColor = vec3(0.3, 0.7, 0.9); // 浅い水の色
+        // ★色合いを柔らかく（簡易PBR: 水深による色吸収）★
+        vec3 shallowColor = vec3(0.4, 0.8, 0.9); // 浅い水 → 透明感のある明るい青緑
+        vec3 deepColor = vec3(0.2, 0.5, 0.7);    // 深い水 → 少し濃い青（強すぎない）
         
-        vec3 waterColor = mix(shallowColor, deepColor, noiseVal);
+        vec3 waterColor = mix(shallowColor, deepColor, noiseVal * 0.6); // ノイズの影響を弱く
         
-        // 波の白沫（高周波sin波）
+        // ★波の白沫（控えめに）★
         float foam = sin(worldPos.x * 2.5 + uTime) * cos(worldPos.y * 1.8 - uTime * 0.7);
-        foam = smoothstep(0.7, 1.0, foam) * 0.1; // 白沫は限られた領域のみ
+        foam = smoothstep(0.8, 1.0, foam) * 0.05; // 白沫は限られた領域のみ、薄く
         waterColor += vec3(foam);
         
-        // Fresnel反射で空の色を混ぜる
-        vec3 reflectColor = mix(waterColor, uSkyColor, fresnel * 0.6);
+        // ★Fresnel反射で空の色を混ぜる（強化）★
+        vec3 reflectColor = mix(waterColor, uSkyColor, fresnel * 0.8);
         
         // 透明度（Fresnelが高いほど透明に→反射が見える）
-        float alpha = mix(0.75, 0.92, fresnel);
+        float alpha = mix(0.7, 0.95, fresnel);
         
         gl_FragColor = vec4(reflectColor, alpha);
       }
