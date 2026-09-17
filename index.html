@@ -270,9 +270,9 @@
         
         vec3 waterColor = mix(shallowColor, deepColor, noiseVal * 0.6); // ノイズの影響を弱く
         
-        // ★波の白沫（控えめに）★
-        float foam = sin(worldPos.x * 2.5 + uTime) * cos(worldPos.y * 1.8 - uTime * 0.7);
-        foam = smoothstep(0.8, 1.0, foam) * 0.05; // 白沫は限られた領域のみ、薄く
+        // ★波の白沫（自然なカタチに）★
+        float foam = sin(worldPos.x * 1.5 + uTime * 0.3) * cos(worldPos.y * 1.2 - uTime * 0.2);
+        foam = smoothstep(0.6, 0.9, foam) * 0.08; // 白沫を広く、薄く
         waterColor += vec3(foam);
         
         // ★Fresnel反射で空の色を混ぜる（強化）★
@@ -305,6 +305,7 @@
       
       const water = new THREE.Mesh(waterGeo, waterMat);
       water.position.set(x, -1.45, z); // 地形より少し上（波の振幅分）
+      water.renderOrder = -1; // 敵より先に描画（透明オブジェクトが敵を隠さないように）
       scene.add(water);
       return water;
     }
