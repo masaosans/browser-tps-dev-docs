@@ -312,9 +312,9 @@
     // ★低洼地を検出して水面メッシュを配置★
     const waterSurfaces = [];
     
-    // 簡易低洼地検出: y < -1.5 の領域をグリッドでスキャン（少し重ねる）
+    // 簡易低洼地検出: y < -1.5 の領域をグリッドでスキャン（大きく重ねる）
     function scanWaterAreas() {
-      const gridSize = 16; // グリッドサイズ（小さくして重なりを確保）
+      const gridSize = 8; // グリッドサイズ（小さくして重なりを大幅に確保）
       const halfSize = TERRAIN_SIZE / 2;
       
       for (let gx = -halfSize; gx < halfSize; gx += gridSize) {
@@ -323,10 +323,10 @@
           const centerY = getTerrainHeight(gx, gz);
           
           if (centerY < -1.5) {
-            // 水たまりとして判定 → 水面メッシュを配置（少しずらして重なるように）
-            const offsetX = (Math.random() - 0.5) * gridSize * 0.3;
-            const offsetZ = (Math.random() - 0.5) * gridSize * 0.3;
-            const water = createWaterSurface(gx + offsetX, gz + offsetZ, gridSize * 0.9);
+            // 水たまりとして判定 → 水面メッシュを配置（大きくずらして重なるように）
+            const offsetX = (Math.random() - 0.5) * gridSize * 0.6;
+            const offsetZ = (Math.random() - 0.5) * gridSize * 0.6;
+            const water = createWaterSurface(gx + offsetX, gz + offsetZ, gridSize * 1.2); // 大きくして重なりを確保
             waterSurfaces.push(water);
           }
         }
