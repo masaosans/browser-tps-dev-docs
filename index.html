@@ -372,23 +372,23 @@
         scene.remove(old.mesh);
       }
       
-      // RingGeometryで円形波紋を作成
-      const rippleGeo = new THREE.RingGeometry(0.1, 0.3, 24);
+      // ★大きな円形で、水色に目立つ白+高透明度★
+      const rippleGeo = new THREE.RingGeometry(0.5, 1.5, 32);
       const rippleMat = new THREE.MeshBasicMaterial({ 
-        color: 0xffffff, transparent: true, opacity: 0.5, side: THREE.DoubleSide 
+        color: 0xffffff, transparent: true, opacity: 0.8, side: THREE.DoubleSide 
       });
       const rippleMesh = new THREE.Mesh(rippleGeo, rippleMat);
       rippleMesh.rotation.x = -Math.PI / 2; // 水平に
-      rippleMesh.position.set(x, -1.43, z); // 水面より少し上
+      rippleMesh.position.set(x, -1.42, z); // 水面より少し上
       
       scene.add(rippleMesh);
       
       ripples.push({
         mesh: rippleMesh,
         scale: 1,
-        opacity: 0.5,
-        life: 2.0, // 生存時間（秒）
-        maxLife: 2.0
+        opacity: 0.8,
+        life: 3.0, // 生存時間（秒）
+        maxLife: 3.0
       });
     }
     
@@ -403,10 +403,10 @@
           continue;
         }
         
-        // アニメーション: scale拡大 + opacity減少
+        // アニメーション: scale拡大 + opacity減少（大きく目立つように）
         const lifeRatio = ripple.life / ripple.maxLife;
-        ripple.scale = 1 + (1 - lifeRatio) * 8; // 最大9倍に拡大
-        ripple.opacity = lifeRatio * 0.5;
+        ripple.scale = 1 + (1 - lifeRatio) * 5; // 最大6倍に拡大
+        ripple.opacity = lifeRatio * 0.8;
         
         ripple.mesh.scale.set(ripple.scale, ripple.scale, 1);
         ripple.mesh.material.opacity = ripple.opacity;
@@ -418,14 +418,14 @@
     function checkPlayerWaterEntry() {
       const playerPos = playerGroup.position;
       
-      // 水面より低いY座標なら水中
+      // 水面より低いY座標なら水中（判定を緩く）
       for (const water of waterSurfaces) {
         const dx = Math.abs(playerPos.x - water.position.x);
         const dz = Math.abs(playerPos.z - water.position.z);
         
         if (dx < water.geometry.parameters.width / 2 && 
             dz < water.geometry.parameters.depth / 2 &&
-            playerPos.y < -1.0) {
+            playerPos.y < -0.5) { // Y座標の判定を緩く（-1.0 → -0.5）
           // 水中
           if (!playerInWater) {
             playerInWater = true;
