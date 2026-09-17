@@ -227,7 +227,8 @@
         // ★リップル変位（円形波）★
         float rippleZ = 0.0;
         if (uRippleTime > 0.0 && uRippleStrength > 0.0) {
-          vec2 toOrigin = pos.xy - uRippleOrigin;
+          // ローカル座標系で距離を計算（各水面メッシュ基準）
+          vec2 toOrigin = pos.xy - uRippleOriginLocal;
           float dist = length(toOrigin);
           
           // 波の半径（時間とともに広がる）
@@ -319,7 +320,7 @@
           uSkyColor: { value: new THREE.Color(0x87CEEB) },    // 空の色
           // ★Phase 2: リップルuniform（全水面に共有）★
           uRippleTime: { value: 0.0 },
-          uRippleOrigin: { value: new THREE.Vector2(0.0, 0.0) },
+          uRippleOriginLocal: { value: new THREE.Vector2(0.0, 0.0) },
           uRippleStrength: { value: 0.0 }
         },
         vertexShader: waterVertShader,
@@ -1580,13 +1581,21 @@
       // ★水面シェーダーの時間更新 + リップルuniform反映★
       for (const water of waterSurfaces) {
         water.material.uniforms.uTime.value += delta;
-        
-        // リップル状態を全水面に共有
-        if (rippleState.active) {
+      }
+      
+      // ★リップル状態を全水面に共有（ローカル座標に変換）★
+      if (rippleState.active) {
+        for (const water of waterSurfaces) {
+          const localOrigin = new THREE.Vector2(
+            rippleState.originX - water.position.x,
+            rippleState.originZ - water.position.z
+          );
           water.material.uniforms.uRippleTime.value = rippleState.time;
-          water.material.uniforms.uRippleOrigin.value.set(rippleState.originX, rippleState.originZ);
+          water.material.uniforms.uRippleOriginLocal.value.copy(localOrigin);
           water.material.uniforms.uRippleStrength.value = rippleState.strength;
-        } else {
+        }
+      } else {
+        for (const water of waterSurfaces) {
           water.material.uniforms.uRippleTime.value = 0.0;
           water.material.uniforms.uRippleStrength.value = 0.0;
         }
