@@ -235,7 +235,7 @@
       }
     `;
     
-    // 水面のFragment Shader（半透明 + Fresnel反射）
+    // 水面のFragment Shader（半透明 + Fresnel反射 + World座標ベースの色変化）
     const waterFragShader = `
       uniform float uTime;
       uniform vec3 uWaterColor;
@@ -251,18 +251,30 @@
         // Fresnel効果（見る角度によって反射率を変える）
         float fresnel = pow(1.0 - max(dot(viewDir, vNormal), 0.0), 3.0);
         
-        // 基本の色（水色）
-        vec3 waterColor = uWaterColor;
+        // ★World座標ベースの色変化（メッシュ境界で切り替わらない）★
+        vec3 worldPos = position;
         
-        // 波の動きで色を微妙に変化
-        float foam = sin(vUv.x * 20.0 + uTime) * cos(vUv.y * 15.0 + uTime * 0.7);
-        waterColor += vec3(foam * 0.05);
+        // 複数のsin波を合成して自然な濃淡（時間変化付き）
+        float n1 = sin(worldPos.x * 0.4 + worldPos.y * 0.3) * 0.5 + 0.5;
+        float n2 = sin(worldPos.x * 0.7 - uTime * 0.15) * sin(worldPos.y * 0.5 + uTime * 0.1) * 0.5 + 0.5;
+        float noiseVal = (n1 + n2) * 0.5; // 0〜1
+        
+        // ノイズで水深を表現（深い場所ほど濃い色）
+        vec3 deepColor = vec3(0.1, 0.3, 0.6);   // 深い水の色
+        vec3 shallowColor = vec3(0.3, 0.7, 0.9); // 浅い水の色
+        
+        vec3 waterColor = mix(shallowColor, deepColor, noiseVal);
+        
+        // 波の白沫（高周波sin波）
+        float foam = sin(worldPos.x * 2.5 + uTime) * cos(worldPos.y * 1.8 - uTime * 0.7);
+        foam = smoothstep(0.7, 1.0, foam) * 0.1; // 白沫は限られた領域のみ
+        waterColor += vec3(foam);
         
         // Fresnel反射で空の色を混ぜる
-        vec3 reflectColor = mix(waterColor, uSkyColor, fresnel * 0.5);
+        vec3 reflectColor = mix(waterColor, uSkyColor, fresnel * 0.6);
         
         // 透明度（Fresnelが高いほど透明に→反射が見える）
-        float alpha = mix(0.6, 0.9, fresnel);
+        float alpha = mix(0.75, 0.92, fresnel);
         
         gl_FragColor = vec4(reflectColor, alpha);
       }
@@ -295,9 +307,9 @@
     // ★低洼地を検出して水面メッシュを配置★
     const waterSurfaces = [];
     
-    // 簡易低洼地検出: y < -1.5 の領域をグリッドでスキャン
+    // 簡易低洼地検出: y < -1.5 の領域をグリッドでスキャン（少し重ねる）
     function scanWaterAreas() {
-      const gridSize = 20; // グリッドサイズ
+      const gridSize = 16; // グリッドサイズ（小さくして重なりを確保）
       const halfSize = TERRAIN_SIZE / 2;
       
       for (let gx = -halfSize; gx < halfSize; gx += gridSize) {
@@ -306,8 +318,10 @@
           const centerY = getTerrainHeight(gx, gz);
           
           if (centerY < -1.5) {
-            // 水たまりとして判定 → 水面メッシュを配置
-            const water = createWaterSurface(gx, gz, gridSize * 0.8);
+            // 水たまりとして判定 → 水面メッシュを配置（少しずらして重なるように）
+            const offsetX = (Math.random() - 0.5) * gridSize * 0.3;
+            const offsetZ = (Math.random() - 0.5) * gridSize * 0.3;
+            const water = createWaterSurface(gx + offsetX, gz + offsetZ, gridSize * 0.9);
             waterSurfaces.push(water);
           }
         }
