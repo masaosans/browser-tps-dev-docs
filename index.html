@@ -420,12 +420,12 @@
       
       // 水面より低いY座標なら水中（判定を緩く）
       for (const water of waterSurfaces) {
+        const halfW = water.geometry.parameters.width / 2;
+        const halfH = water.geometry.parameters.height / 2;
         const dx = Math.abs(playerPos.x - water.position.x);
         const dz = Math.abs(playerPos.z - water.position.z);
         
-        if (dx < water.geometry.parameters.width / 2 && 
-            dz < water.geometry.parameters.depth / 2 &&
-            playerPos.y < -0.5) { // Y座標の判定を緩く（-1.0 → -0.5）
+        if (dx < halfW && dz < halfH && playerPos.y < -0.5) {
           // 水中
           if (!playerInWater) {
             playerInWater = true;
