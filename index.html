@@ -285,9 +285,9 @@
       }
     `;
     
-    // 水面メッシュ生成関数（低洼地ごとに配置）
-    function createWaterSurface(x, z, radius) {
-      const waterGeo = new THREE.PlaneGeometry(radius * 2, radius * 2, 32, 32);
+    // 水面メッシュ生成関数（単一メッシュ）
+    function createWaterSurface(x, z, width, depth) {
+      const waterGeo = new THREE.PlaneGeometry(width, depth, 64, 64);
       waterGeo.rotateX(-Math.PI / 2); // 水平に
       
       const waterMat = new THREE.ShaderMaterial({
@@ -309,27 +309,47 @@
       return water;
     }
     
-    // ★低洼地を検出して水面メッシュを配置★
+    // ★低洼地領域をマージして単一メッシュで生成★
     const waterSurfaces = [];
     
-    // 簡易低洼地検出: y < -1.5 の領域をグリッドでスキャン（大きく重ねる）
     function scanWaterAreas() {
-      const gridSize = 8; // グリッドサイズ（小さくして重なりを大幅に確保）
+      const gridSize = 4; // 検出グリッド（細かく）
       const halfSize = TERRAIN_SIZE / 2;
+      
+      // 低洼地セルを収集
+      const wetCells = [];
       
       for (let gx = -halfSize; gx < halfSize; gx += gridSize) {
         for (let gz = -halfSize; gz < halfSize; gz += gridSize) {
-          // グリッド中心の高さを取得
           const centerY = getTerrainHeight(gx, gz);
           
           if (centerY < -1.5) {
-            // 水たまりとして判定 → 水面メッシュを配置（大きくずらして重なるように）
-            const offsetX = (Math.random() - 0.5) * gridSize * 0.6;
-            const offsetZ = (Math.random() - 0.5) * gridSize * 0.6;
-            const water = createWaterSurface(gx + offsetX, gz + offsetZ, gridSize * 1.2); // 大きくして重なりを確保
-            waterSurfaces.push(water);
+            wetCells.push({ x: gx + gridSize / 2, z: gz + gridSize / 2 });
           }
         }
+      }
+      
+      // 低洼地セルをバウンディングボックスにマージ（単一メッシュ）
+      if (wetCells.length > 0) {
+        let minX = Infinity, maxX = -Infinity;
+        let minZ = Infinity, maxZ = -Infinity;
+        
+        for (const cell of wetCells) {
+          minX = Math.min(minX, cell.x);
+          maxX = Math.max(maxX, cell.x);
+          minZ = Math.min(minZ, cell.z);
+          maxZ = Math.max(maxZ, cell.z);
+        }
+        
+        // 周囲に少し余裕を持たせる
+        const margin = gridSize * 2;
+        minX -= margin; maxX += margin;
+        minZ -= margin; maxZ += margin;
+        
+        const width = maxX - minX;
+        const depth = maxZ - minZ;
+        const water = createWaterSurface((minX + maxX) / 2, (minZ + maxZ) / 2, width, depth);
+        waterSurfaces.push(water);
       }
     }
     
