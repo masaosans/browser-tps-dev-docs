@@ -241,7 +241,7 @@
                + hiWaveX + hiWaveY + hiWaveXY
                + loWaveX + loWaveY;
         
-        // ★リップル変位（円形波）★
+        // ★リップル変位（円形波）— サイズと周波数を抑えて自然に★
         float rippleZ = 0.0;
         if (uRippleTime > 0.0 && uRippleStrength > 0.0) {
           // ローカル座標系で距離を計算（各水面メッシュ基準）
@@ -249,17 +249,15 @@
           vec2 toOrigin = pos.xz - uRippleOriginLocal;
           float dist = length(toOrigin);
           
-          // 波の半径（時間とともに広がる）
-          float waveRadius = uRippleTime * 4.0;
+          // 波の半径（時間とともに広がる）— ゆっくり拡大
+          float waveRadius = uRippleTime * 3.0;
           
-          // より大きな波（周波数を下げて、遠くまで届くように）
-          float rippleWave = sin(dist * 4.0 - uRippleTime * 5.0);
+          // 小さな波（周波数を下げて、穏やかに）
+          float rippleWave = sin(dist * 2.5 - uRippleTime * 4.0) * 0.7;
+          float rippleWave2 = sin(dist * 1.8 - uRippleTime * 3.0) * 0.4;
           
-          // 複数の波の重なり（より自然で目立つ表現）
-          float rippleWave2 = sin(dist * 2.5 - uRippleTime * 3.5) * 0.6;
-          
-          // 減衰（遠くなるほど小さく、時間が経つほど小さく）
-          float attenuation = exp(-dist * 0.25) * smoothstep(uRippleTime * 1.5, 0.0, dist - waveRadius);
+          // 減衰（遠くなるほど小さく、時間が経つほど小さく）— 早めに減衰
+          float attenuation = exp(-dist * 0.35) * smoothstep(uRippleTime * 1.8, 0.0, dist - waveRadius);
           
           rippleZ = (rippleWave + rippleWave2) * attenuation * uRippleStrength;
         }
@@ -365,26 +363,26 @@
         // 透明度（Fresnelが高いほど透明に→反射が見える）
         float alpha = mix(0.7, 0.95, fresnel);
         
-        // ★Phase 2: リップルの視覚的エフェクト（同心円状の反射パターン）★
+        // ★Phase 2: リップルの視覚的エフェクト（同心円状の反射パターン）— 小さく穏やかに★
         if (uRippleTime > 0.0 && uRippleStrength > 0.0) {
           vec2 toOrigin = worldPos.xz - uRippleOriginLocal;
           float dist = length(toOrigin);
           
-          // 広がる同心円（明るく、目立つ色）
-          float ripplePattern = sin(dist * 3.0 - uRippleTime * 4.0);
-          ripplePattern = smoothstep(-0.5, 1.0, ripplePattern); // 白に近い値に
+          // 広がる同心円（明るく、目立つ色）— 周波数を下げて穏やかに
+          float ripplePattern = sin(dist * 2.0 - uRippleTime * 3.5);
+          ripplePattern = smoothstep(-0.6, 1.0, ripplePattern) * 0.7; // 白さを抑える
             
           // 減衰（遠くなるほど、時間が経つほど小さく）— 持続時間で正規化
           float normalizedTime = uRippleTime / uRippleDuration;
-          float rippleAttenuation = exp(-dist * 0.2) * (1.0 - normalizedTime);
+          float rippleAttenuation = exp(-dist * 0.3) * (1.0 - normalizedTime);
           rippleAttenuation = clamp(rippleAttenuation, 0.0, 1.0);
           
-          // 反射色に白を追加（水面の盛り上がりとして視覚化）
-          vec3 rippleColor = vec3(0.95, 0.98, 1.0) * ripplePattern * rippleAttenuation * uRippleStrength * 1.5;
+          // 反射色に白を追加（水面の盛り上がりとして視覚化）— 弱く
+          vec3 rippleColor = vec3(0.95, 0.98, 1.0) * ripplePattern * rippleAttenuation * uRippleStrength * 0.8;
           reflectColor += rippleColor;
           
-          // 透明度を少し下げて（濃く）、盛り上がりを強調
-          alpha = min(alpha + ripplePattern * 0.1 * rippleAttenuation, 0.98);
+          // 透明度を少し下げて（濃く）、盛り上がりを強調 — 控えめに
+          alpha = min(alpha + ripplePattern * 0.05 * rippleAttenuation, 0.98);
         }
         
         gl_FragColor = vec4(reflectColor, alpha);
@@ -483,8 +481,8 @@
       this.z = z;
       this.time = 0.0;
       this.duration = 4.0; // 秒
-      this.initialStrength = 0.35; // 適切な値（頂点変位として目立つ程度）
-      this.strength = 0.35;
+      this.initialStrength = 0.12; // 小さくて自然な波紋（0.35→0.12）
+      this.strength = 0.12;
       
       /**
        * 毎フレーム更新
@@ -497,8 +495,8 @@
           return false; // 寿命終了
         }
         
-        // 最初は強く、徐々に弱く（2乗減衰で滑らかに）
-        this.strength = this.initialStrength * lifeRatio * lifeRatio;
+        // 最初は強く、徐々に弱く（2乗減衰で滑らかに）— さらに早く減衰
+        this.strength = this.initialStrength * lifeRatio * lifeRatio * 1.5;
         return true; // 生存中
       };
     }
@@ -558,6 +556,8 @@
     
     // プレイヤーが水に入る時に波紋を生成
     let playerInWater = false;
+    let inWaterStartTime = 0; // 水中に入った時刻（移動中に波紋を生成するため）
+    let lastRippleFrame = -1; // 最後の波紋生成フレーム（間欠的生成用）
     function checkPlayerWaterEntry() {
       const playerPos = playerGroup.position;
       
@@ -572,12 +572,22 @@
         // 水面のY座標（-1.45）付近にいるかを判定
         const waterLevel = water.position.y; // -1.45
         if (dx < halfW && dz < halfH && playerPos.y < waterLevel + 0.3) {
-          // 水中
+          // 水中 — 移動中に定期的に波紋を生成
           if (!playerInWater) {
             playerInWater = true;
+            inWaterStartTime = performance.now();
             console.log('[Ripple] Player entered water at', playerPos.x, playerPos.z);
-            // 水に入った瞬間に1回大きな波紋を生成
+            // 水に入った瞬間に小さな波紋を1つ生成
             createRipple(playerPos.x, playerPos.z);
+          } else {
+            // 水中で移動中に定期的に波紋（毎フレームではなく間欠的）
+            const now = performance.now();
+            const timeInWater = (now - inWaterStartTime) / 1000;
+            // 0.8秒ごとに波紋を生成（移動速度に応じて調整）
+            if (Math.floor(timeInWater * 1.25) > lastRippleFrame) {
+              lastRippleFrame = Math.floor(timeInWater * 1.25);
+              createRipple(playerPos.x, playerPos.z);
+            }
           }
           return;
         }
