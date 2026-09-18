@@ -427,9 +427,9 @@
       this.x = x;
       this.z = z;
       this.time = 0.0;
-      this.duration = 5.0; // 秒 — 完全に広がるまで
-      this.initialStrength = 1.5; // 大きく
-      this.strength = 1.5;
+      this.duration = 4.0; // 秒
+      this.initialStrength = 0.35; // 適切な値（頂点変位として目立つ程度）
+      this.strength = 0.35;
       
       /**
        * 毎フレーム更新
@@ -518,6 +518,7 @@
           // 水中
           if (!playerInWater) {
             playerInWater = true;
+            console.log('[Ripple] Player entered water at', playerPos.x, playerPos.z);
             // 水に入った瞬間に1回大きな波紋を生成
             createRipple(playerPos.x, playerPos.z);
           }
@@ -529,6 +530,15 @@
       if (playerInWater) {
         playerInWater = false;
       }
+    }
+    
+    /**
+     * 手動で波紋を生成（デバッグ用 - Rキー）
+     */
+    function debugSpawnRipple() {
+      const playerPos = playerGroup.position;
+      console.log('[Ripple] Manual spawn at', playerPos.x, playerPos.z);
+      createRipple(playerPos.x, playerPos.z);
     }
 
     // ============================================================
@@ -1270,6 +1280,18 @@
         lastTouchY = touch.clientY;
       }
     }, { passive: true });
+
+    // ============================================================
+    // ★デバッグ用: スペースキーで手動波紋生成（原因特定用）★
+    // ============================================================
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        const playerPos = playerGroup.position;
+        console.log('[DEBUG] Space pressed - spawning ripple at', playerPos.x.toFixed(2), playerPos.z.toFixed(2));
+        createRipple(playerPos.x, playerPos.z);
+      }
+    });
 
     // ============================================================
     // 射撃システム（ADS + リコイル可視化 + ウェポンスウェイ）
