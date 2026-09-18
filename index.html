@@ -319,8 +319,9 @@
           vec2 toOrigin = worldPos.xz - uRippleOriginLocal;
           float dist = length(toOrigin);
           
-          // ★DEBUG: リップルが有効な時は赤く点滅して可視化★
-          reflectColor = mix(reflectColor, vec3(1.0, 0.2, 0.2), 0.5 * uRippleStrength);
+          // ★DEBUG: リップルが有効な時は明るく赤色点灯（uniform到達確認用）★
+          float debugIntensity = step(0.01, uRippleStrength);
+          reflectColor = mix(reflectColor, vec3(1.0, 0.15, 0.15), 0.7 * debugIntensity);
           
           // 広がる同心円（明るく、目立つ色）
           float ripplePattern = sin(dist * 3.0 - uRippleTime * 4.0);
