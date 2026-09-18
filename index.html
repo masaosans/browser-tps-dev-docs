@@ -518,8 +518,10 @@
         const dx = Math.abs(playerPos.x - water.position.x);
         const dz = Math.abs(playerPos.z - water.position.z);
         
-        // ★水面領域内かつ水面レベルに近い → 水中として認識★
-        if (dx < halfW && dz < halfH && playerPos.y < 0.5) {
+        // ★水面領域内かつ水面レベルに近い → 水中として認識（厳密化）★
+        // 水面のY座標（-1.45）付近にいるかを判定
+        const waterLevel = water.position.y; // -1.45
+        if (dx < halfW && dz < halfH && playerPos.y < waterLevel + 0.3) {
           // 水中
           if (!playerInWater) {
             playerInWater = true;
