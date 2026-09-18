@@ -346,13 +346,14 @@
         // ★波の白沫（自然な散らばり - ノイズベース）★
         // 波の高さでマスクすると帯状になるため、高周波ノイズのみで自然に散らす
         float foamNoise = fract(sin(dot(worldPos.xz * 0.5, vec2(12.9898, 78.233))) * 43758.5453);
-        foamNoise = step(0.65, foamNoise) * 0.04; // ランダムに点在
+        foamNoise = step(0.7, foamNoise) * 0.02; // より少ない数、薄く
         
-        // ゆっくり流れるような動き（時間変化）
+        // ゆっくり流れるような動き（時間変化）— 白色を控えめに
         float foamFlow = sin(worldPos.x * 0.3 + uTime * 0.1) * 0.5 + 0.5;
-        foamFlow *= 0.5 + foamNoise;
+        foamFlow = mix(0.0, foamFlow, 0.3); // 白さを3割に抑える
+        foamFlow *= (0.5 + foamNoise * 2.0);
         
-        waterColor += vec3(foamFlow);
+        waterColor += vec3(foamFlow * 0.15); // 全体的に薄く
         
         // 照明を適用（拡散で全体的に明るく + 鏡面でハイライト）
         waterColor += vec3(diff); // 拡散光で明るさ
