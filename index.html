@@ -343,20 +343,16 @@
         
         vec3 waterColor = mix(shallowColor, deepColor, noiseVal * 0.6); // ノイズの影響を弱く
         
-        // ★波の白沫（波の山頂にのみ、自然な局所表現）★
-        // 格子状ストライプを解消するため、波の高さに応じたマスクを使用
-        float waveHeight = sin(worldPos.x * 2.0 + uTime) * 0.03 
-                         + sin(worldPos.y * 1.5 + uTime * 0.8) * 0.02
-                         + sin((worldPos.x + worldPos.y) * 3.0 + uTime * 1.2) * 0.015;
-        // 高い場所（波の山）にのみ白沫（thresholdで局所化）
-        float foamMask = smoothstep(0.02, 0.045, waveHeight);
-        // 高周波ノイズで自然なランダムさ（格子状にならないように方向を複数）
-        float foamDetail = sin(worldPos.x * 8.0 + uTime * 1.5) 
-                         * sin(worldPos.y * 6.0 - uTime * 1.2)
-                         * sin((worldPos.x + worldPos.y) * 7.0 + uTime * 1.3);
-        foamDetail = smoothstep(0.3, 0.7, foamDetail) * 0.5;
-        float foam = foamMask * (0.06 + foamDetail);
-        waterColor += vec3(foam);
+        // ★波の白沫（自然な散らばり - ノイズベース）★
+        // 波の高さでマスクすると帯状になるため、高周波ノイズのみで自然に散らす
+        float foamNoise = fract(sin(dot(worldPos.xz * 0.5, vec2(12.9898, 78.233))) * 43758.5453);
+        foamNoise = step(0.65, foamNoise) * 0.04; // ランダムに点在
+        
+        // ゆっくり流れるような動き（時間変化）
+        float foamFlow = sin(worldPos.x * 0.3 + uTime * 0.1) * 0.5 + 0.5;
+        foamFlow *= 0.5 + foamNoise;
+        
+        waterColor += vec3(foamFlow);
         
         // 照明を適用（拡散で全体的に明るく + 鏡面でハイライト）
         waterColor += vec3(diff); // 拡散光で明るさ
