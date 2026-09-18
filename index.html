@@ -320,11 +320,11 @@
         vec3 L = normalize(uSunDir);
         
         // 拡散反射（ランバート）— 波の斜面が太陽を反射して明るく
-        float diff = max(dot(N, L), 0.0) * 0.4; // 0〜0.4の柔らかい輝き
+        float diff = max(dot(N, L), 0.0) * 0.25; // 0〜0.25の控えめな輝き
         
-        // 鏡面反射（Phong）— 太陽の specular highlight
+        // 鏡面反射（Phong）— 柔らかい広がりのハイライト（鋭すぎる白線を解消）
         vec3 H = normalize(L + viewDir); // half vector
-        float spec = pow(max(dot(N, H), 0.0), 80.0) * 0.6; // 鋭い白い光
+        float spec = pow(max(dot(N, H), 0.0), 24.0) * 0.25; // 低指数で広く柔らかく
         
         // ★Fresnel効果（見る角度によって反射率を変える）- 強化版★
         float fresnel = pow(1.0 - max(dot(viewDir, N), 0.0), 4.0);
