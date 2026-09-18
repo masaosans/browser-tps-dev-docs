@@ -241,7 +241,7 @@
                + hiWaveX + hiWaveY + hiWaveXY
                + loWaveX + loWaveY;
         
-        // ★リップル変位（円形波）— サイズと周波数を抑えて自然に★
+        // ★リップル変位（円形波）— 中心から広がっていく表現★
         float rippleZ = 0.0;
         if (uRippleTime > 0.0 && uRippleStrength > 0.0) {
           // ローカル座標系で距離を計算（各水面メッシュ基準）
@@ -249,15 +249,27 @@
           vec2 toOrigin = pos.xz - uRippleOriginLocal;
           float dist = length(toOrigin);
           
-          // 波の半径（時間とともに広がる）— ゆっくり拡大
-          float waveRadius = uRippleTime * 3.0;
+          // 波の前面（中心から広がる半径）— 時間が経つほど大きく
+          float waveFrontRadius = uRippleTime * 3.0;
           
-          // 小さな波（周波数を下げて、穏やかに）
+          // 波前面からの距離（波のリングがどこにあるか）
+          float distFromWaveFront = abs(dist - waveFrontRadius);
+          
+          // 波前面のみを強調（中心と遠方はゼロ）— リング状に広がる
+          float ringEnvelope = exp(-distFromWaveFront * 0.8);
+          
+          // 波前面より内側・外側は滑らかに減衰
+          float innerFade = smoothstep(0.0, 1.5, dist - (waveFrontRadius - 2.0));
+          float outerFade = 1.0 - smoothstep(0.0, 2.0, dist - waveFrontRadius);
+          float spatialFade = ringEnvelope * mix(innerFade, outerFade, step(dist, waveFrontRadius));
+          
+          // 波の振動（中心から広がるパターン）
           float rippleWave = sin(dist * 2.5 - uRippleTime * 4.0) * 0.7;
           float rippleWave2 = sin(dist * 1.8 - uRippleTime * 3.0) * 0.4;
           
-          // 減衰（遠くなるほど小さく、時間が経つほど小さく）— 早めに減衰
-          float attenuation = exp(-dist * 0.35) * smoothstep(uRippleTime * 1.8, 0.0, dist - waveRadius);
+          // 減衰（遠くなるほど小さく、時間が経つほど小さく）
+          float timeDecay = exp(-uRippleTime * 0.5);
+          float attenuation = spatialFade * timeDecay;
           
           rippleZ = (rippleWave + rippleWave2) * attenuation * uRippleStrength;
         }
@@ -556,8 +568,10 @@
     
     // プレイヤーが水に入る時に波紋を生成
     let playerInWater = false;
-    let inWaterStartTime = 0; // 水中に入った時刻（移動中に波紋を生成するため）
-    let lastRippleFrame = -1; // 最後の波紋生成フレーム（間欠的生成用）
+    let lastPlayerPosInWater = new THREE.Vector3(); // 水中での直前の位置（移動判定用）
+    let lastRippleSpawnTime = 0; // 最後に波紋を生成した時刻（連続生成防止）
+    const RIPPLE_MOVE_THRESHOLD = 0.15; // この距離以上動いた時にのみ波紋を生成
+    
     function checkPlayerWaterEntry() {
       const playerPos = playerGroup.position;
       
@@ -572,22 +586,26 @@
         // 水面のY座標（-1.45）付近にいるかを判定
         const waterLevel = water.position.y; // -1.45
         if (dx < halfW && dz < halfH && playerPos.y < waterLevel + 0.3) {
-          // 水中 — 移動中に定期的に波紋を生成
+          // 水中 — 動いたタイミングでのみ波紋を生成
           if (!playerInWater) {
             playerInWater = true;
-            inWaterStartTime = performance.now();
+            lastPlayerPosInWater.copy(playerPos);
             console.log('[Ripple] Player entered water at', playerPos.x, playerPos.z);
-            // 水に入った瞬間に小さな波紋を1つ生成
+            // 水に入った瞬間に小さな波紋を1つ生成（中心から広がる）
             createRipple(playerPos.x, playerPos.z);
           } else {
-            // 水中で移動中に定期的に波紋（毎フレームではなく間欠的）
-            const now = performance.now();
-            const timeInWater = (now - inWaterStartTime) / 1000;
-            // 0.8秒ごとに波紋を生成（移動速度に応じて調整）
-            if (Math.floor(timeInWater * 1.25) > lastRippleFrame) {
-              lastRippleFrame = Math.floor(timeInWater * 1.25);
+            // 移動距離を計算
+            const delta = new THREE.Vector3().subVectors(playerPos, lastPlayerPosInWater);
+            const moveDist = delta.length();
+            
+            // 一定距離以上動いた時、かつ直後の波紋生成間隔（0.5秒）が空いた時のみ生成
+            if (moveDist > RIPPLE_MOVE_THRESHOLD && performance.now() - lastRippleSpawnTime > 500) {
+              lastRippleSpawnTime = performance.now();
               createRipple(playerPos.x, playerPos.z);
             }
+            
+            // 位置を更新（次のフレームの移動量計算用）
+            lastPlayerPosInWater.copy(playerPos);
           }
           return;
         }
