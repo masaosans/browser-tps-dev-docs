@@ -232,15 +232,18 @@
           float dist = length(toOrigin);
           
           // 波の半径（時間とともに広がる）
-          float waveRadius = uRippleTime * 3.0;
+          float waveRadius = uRippleTime * 4.0;
           
-          // リンデンマイヤー関数で円形波を表現
-          float rippleWave = sin(dist * 8.0 - uRippleTime * 6.0);
+          // より大きな波（周波数を下げて、遠くまで届くように）
+          float rippleWave = sin(dist * 4.0 - uRippleTime * 5.0);
+          
+          // 複数の波の重なり（より自然で目立つ表現）
+          float rippleWave2 = sin(dist * 2.5 - uRippleTime * 3.5) * 0.6;
           
           // 減衰（遠くなるほど小さく、時間が経つほど小さく）
-          float attenuation = exp(-dist * 0.3) * smoothstep(uRippleTime * 2.0, 0.0, dist - waveRadius);
+          float attenuation = exp(-dist * 0.25) * smoothstep(uRippleTime * 1.5, 0.0, dist - waveRadius);
           
-          rippleZ = rippleWave * attenuation * uRippleStrength;
+          rippleZ = (rippleWave + rippleWave2) * attenuation * uRippleStrength;
         }
         
         // Z軸（元はY）に波の高さを加算
@@ -394,8 +397,8 @@
       time: 0.0,
       originX: 0.0,
       originZ: 0.0,
-      duration: 3.0, // 秒
-      strength: 0.12 // 頂点変位の強さ
+      duration: 4.0, // 秒
+      strength: 0.25 // 頂点変位の強さ（大きく）
     };
     
     /**
@@ -407,8 +410,8 @@
         time: 0.0,
         originX: x,
         originZ: z,
-        duration: 3.0,
-        strength: 0.12
+        duration: 4.0,
+        strength: 0.35 // 最初の強度をさらに大きく
       };
     }
     
