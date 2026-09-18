@@ -249,21 +249,17 @@
           vec2 toOrigin = pos.xz - uRippleOriginLocal;
           float dist = length(toOrigin);
           
-          // 波の前面（中心から広がる半径）— 時間が経つほど大きく
-          float waveFrontRadius = uRippleTime * 3.0;
+          // 波の前面（中心から広がる半径）— ゆっくり拡大（3.0→1.8）
+          float waveFrontRadius = uRippleTime * 1.8;
           
           // 波前面からの距離（波のリングがどこにあるか）
           float distFromWaveFront = abs(dist - waveFrontRadius);
           
-          // 波前面のみを強調（中心と遠方はゼロ）— リング状に広がる
-          float ringEnvelope = exp(-distFromWaveFront * 0.8);
+          // ★極薄リング包絡線 — 波前面のみを残し、他は完全にゼロ★
+          // 幅0.15の非常に狭い範囲で波前面のみを可視化
+          float ringEnvelope = smoothstep(0.2, 0.03, distFromWaveFront);
           
-          // 波前面より内側・外側は滑らかに減衰
-          float innerFade = smoothstep(0.0, 1.5, dist - (waveFrontRadius - 2.0));
-          float outerFade = 1.0 - smoothstep(0.0, 2.0, dist - waveFrontRadius);
-          float spatialFade = ringEnvelope * mix(innerFade, outerFade, step(dist, waveFrontRadius));
-          
-          // 波の振動（中心から広がるパターン）
+          // 波の振動（中心から広がるパターン）— リング内で振動
           float rippleWave = sin(dist * 2.5 - uRippleTime * 4.0) * 0.7;
           float rippleWave2 = sin(dist * 1.8 - uRippleTime * 3.0) * 0.4;
           
