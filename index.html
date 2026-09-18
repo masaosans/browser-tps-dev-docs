@@ -274,6 +274,7 @@
       uniform float uRippleTime;
       uniform vec2 uRippleOriginLocal;
       uniform float uRippleStrength;
+      uniform float uRippleDuration; // リップルの持続時間
       
       varying vec2 vUv;
       varying vec3 vNormal;
@@ -321,8 +322,9 @@
           float ripplePattern = sin(dist * 3.0 - uRippleTime * 4.0);
           ripplePattern = smoothstep(-0.5, 1.0, ripplePattern); // 白に近い値に
             
-          // 減衰（遠くなるほど、時間が経つほど小さく）
-          float rippleAttenuation = exp(-dist * 0.2) * (1.0 - uRippleTime / uRippleStrength * 0.5);
+          // 減衰（遠くなるほど、時間が経つほど小さく）— 持続時間で正規化
+          float normalizedTime = uRippleTime / uRippleDuration;
+          float rippleAttenuation = exp(-dist * 0.2) * (1.0 - normalizedTime);
           rippleAttenuation = clamp(rippleAttenuation, 0.0, 1.0);
           
           // 反射色に白を追加（水面の盛り上がりとして視覚化）
@@ -350,7 +352,8 @@
           // ★Phase 2: リップルuniform（全水面に共有）★
           uRippleTime: { value: 0.0 },
           uRippleOriginLocal: { value: new THREE.Vector2(0.0, 0.0) },
-          uRippleStrength: { value: 0.0 }
+          uRippleStrength: { value: 0.0 },
+          uRippleDuration: { value: 4.0 }
         },
         vertexShader: waterVertShader,
         fragmentShader: waterFragShader,
@@ -472,7 +475,8 @@
         const dx = Math.abs(playerPos.x - water.position.x);
         const dz = Math.abs(playerPos.z - water.position.z);
         
-        if (dx < halfW && dz < halfH && playerPos.y < -0.5) {
+        // ★水面領域内かつ水面レベルに近い → 水中として認識★
+        if (dx < halfW && dz < halfH && playerPos.y < 0.5) {
           // 水中
           if (!playerInWater) {
             playerInWater = true;
