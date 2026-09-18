@@ -344,9 +344,11 @@
         vec3 waterColor = mix(shallowColor, deepColor, noiseVal * 0.6); // ノイズの影響を弱く
         
         // ★波の白沫（自然なカタチに）★
-        float foam = sin(worldPos.x * 1.5 + uTime * 0.3) * cos(worldPos.y * 1.2 - uTime * 0.2);
-        foam = smoothstep(0.6, 0.9, foam) * 0.08; // 白沫を広く、薄く
-        waterColor += vec3(foam);
+        // TODO: 格子状ストライプを解消するため一旦無効化（しましま原因調査中）
+        float foam = 0.0;
+        // float foam = sin(worldPos.x * 1.5 + uTime * 0.3) * cos(worldPos.y * 1.2 - uTime * 0.2);
+        // foam = smoothstep(0.6, 0.9, foam) * 0.08; // 白沫を広く、薄く
+        // waterColor += vec3(foam);
         
         // 照明を適用（拡散で全体的に明るく + 鏡面でハイライト）
         waterColor += vec3(diff); // 拡散光で明るさ
