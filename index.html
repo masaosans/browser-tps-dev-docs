@@ -270,6 +270,11 @@
       uniform float uTime;
       uniform vec3 uWaterColor;
       uniform vec3 uSkyColor;
+      // ★Phase 2: リップル可視化uniform★
+      uniform float uRippleTime;
+      uniform vec2 uRippleOriginLocal;
+      uniform float uRippleStrength;
+      
       varying vec2 vUv;
       varying vec3 vNormal;
       varying vec3 vViewPos;
@@ -306,6 +311,27 @@
         
         // 透明度（Fresnelが高いほど透明に→反射が見える）
         float alpha = mix(0.7, 0.95, fresnel);
+        
+        // ★Phase 2: リップルの視覚的エフェクト（同心円状の反射パターン）★
+        if (uRippleTime > 0.0 && uRippleStrength > 0.0) {
+          vec2 toOrigin = worldPos.xy - uRippleOriginLocal;
+          float dist = length(toOrigin);
+          
+          // 広がる同心円（明るく、目立つ色）
+          float ripplePattern = sin(dist * 3.0 - uRippleTime * 4.0);
+          ripplePattern = smoothstep(-0.5, 1.0, ripplePattern); // 白に近い値に
+            
+          // 減衰（遠くなるほど、時間が経つほど小さく）
+          float rippleAttenuation = exp(-dist * 0.2) * (1.0 - uRippleTime / uRippleStrength * 0.5);
+          rippleAttenuation = clamp(rippleAttenuation, 0.0, 1.0);
+          
+          // 反射色に白を追加（水面の盛り上がりとして視覚化）
+          vec3 rippleColor = vec3(0.95, 0.98, 1.0) * ripplePattern * rippleAttenuation * uRippleStrength * 1.5;
+          reflectColor += rippleColor;
+          
+          // 透明度を少し下げて（濃く）、盛り上がりを強調
+          alpha = min(alpha + ripplePattern * 0.1 * rippleAttenuation, 0.98);
+        }
         
         gl_FragColor = vec4(reflectColor, alpha);
       }
