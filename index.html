@@ -207,7 +207,7 @@
     const waterVertShader = `
       uniform float uTime;
       uniform float uRippleTime; // リプル発生からの時間
-      uniform vec2 uRippleOrigin; // リプルの中心座標(XZ)
+      uniform vec2 uRippleOriginLocal; // ローカル座標系のリップル中心
       uniform float uRippleStrength; // リプルの強さ
       
       varying vec2 vUv;
