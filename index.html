@@ -417,51 +417,89 @@
 
     // ============================================================
     // ★Phase 2: Ripple波紋エフェクト（プレイヤーが水に入る時）★
-    //   → RingGeometryではなく、水面シェーダーの頂点変位で表現
+    //   → 水面に入った瞬間に1回大きな波紋を生成、それが広がる
     // ============================================================
     
-    // リップル状態（全水面で共有）
-    let rippleState = {
-      active: false,
-      time: 0.0,
-      originX: 0.0,
-      originZ: 0.0,
-      duration: 4.0, // 秒
-      strength: 0.25 // 頂点変位の強さ（大きく）
-    };
+    /**
+     * 個々の波紋インスタンス（単一、最大1つまで）
+     */
+    function Ripple(x, z) {
+      this.x = x;
+      this.z = z;
+      this.time = 0.0;
+      this.duration = 5.0; // 秒 — 完全に広がるまで
+      this.initialStrength = 1.5; // 大きく
+      this.strength = 1.5;
+      
+      /**
+       * 毎フレーム更新
+       */
+      this.update = function(delta) {
+        this.time += delta;
+        
+        const lifeRatio = 1.0 - (this.time / this.duration);
+        if (lifeRatio <= 0) {
+          return false; // 寿命終了
+        }
+        
+        // 最初は強く、徐々に弱く（2乗減衰で滑らかに）
+        this.strength = this.initialStrength * lifeRatio * lifeRatio;
+        return true; // 生存中
+      };
+    }
+    
+    // 単一の波紋インスタンス（常に最大1つ）
+    let activeRipple = null;
     
     /**
      * リップルを生成（プレイヤーが水に入った時）
      */
     function createRipple(x, z) {
-      rippleState = {
-        active: true,
-        time: 0.0,
-        originX: x,
-        originZ: z,
-        duration: 4.0,
-        strength: 0.35 // 最初の強度をさらに大きく
-      };
+      // 既存の波紋があれば破棄（新しいものを優先）
+      activeRipple = null;
+      
+      activeRipple = new Ripple(x, z);
     }
     
     /**
-     * リップル状態を更新（毎フレーム）
+     * すべての波紋を更新（毎フレーム）
      */
     function updateRippleState(delta) {
-      if (!rippleState.active) return;
+      if (!activeRipple) return;
       
-      rippleState.time += delta;
-      
-      // 時間経過で強さを減衰
-      const lifeRatio = 1.0 - (rippleState.time / rippleState.duration);
-      if (lifeRatio <= 0) {
-        rippleState.active = false;
-        rippleState.strength = 0.0;
-      } else {
-        // 最初は強く、徐々に弱く（滑らかな減衰）
-        rippleState.strength = 0.12 * lifeRatio * lifeRatio;
+      const alive = activeRipple.update(delta);
+      if (!alive) {
+        activeRipple = null;
       }
     }
+    
+    /**
+     * 全水面に波紋状態をuniformで送信
+     */
+    function sendRippleUniforms() {
+      if (!activeRipple) {
+        // 活発な波紋がなければ非アクティブを通知
+        for (const water of waterSurfaces) {
+          water.material.uniforms.uRippleTime.value = 0.0;
+          water.material.uniforms.uRippleOriginLocal.value.set(0.0, 0.0);
+          water.material.uniforms.uRippleStrength.value = 0.0;
+        }
+        return;
+      }
+      
+      for (const water of waterSurfaces) {
+        // ワールド座標 → 各水面メッシュのローカル座標に変換
+        const localOrigin = new THREE.Vector2(
+          activeRipple.x - water.position.x,
+          activeRipple.z - water.position.z
+        );
+        water.material.uniforms.uRippleTime.value = activeRipple.time;
+        water.material.uniforms.uRippleOriginLocal.value.copy(localOrigin);
+        water.material.uniforms.uRippleStrength.value = activeRipple.strength;
+        water.material.uniforms.uRippleDuration.value = activeRipple.duration;
+      }
+    }
+
     
     // プレイヤーが水に入る時に波紋を生成
     let playerInWater = false;
@@ -480,6 +518,7 @@
           // 水中
           if (!playerInWater) {
             playerInWater = true;
+            // 水に入った瞬間に1回大きな波紋を生成
             createRipple(playerPos.x, playerPos.z);
           }
           return;
@@ -1611,31 +1650,14 @@
       updateReloadAnimation(delta);
       updateCamera(delta); // リコイル適用済みで呼び出し
       
-      // ★水面シェーダーの時間更新 + リップルuniform反映★
+      // ★水面シェーダーの時間更新★
       for (const water of waterSurfaces) {
         water.material.uniforms.uTime.value += delta;
       }
       
-      // ★リップル状態を全水面に共有（ローカル座標に変換）★
-      if (rippleState.active) {
-        for (const water of waterSurfaces) {
-          const localOrigin = new THREE.Vector2(
-            rippleState.originX - water.position.x,
-            rippleState.originZ - water.position.z
-          );
-          water.material.uniforms.uRippleTime.value = rippleState.time;
-          water.material.uniforms.uRippleOriginLocal.value.copy(localOrigin);
-          water.material.uniforms.uRippleStrength.value = rippleState.strength;
-        }
-      } else {
-        for (const water of waterSurfaces) {
-          water.material.uniforms.uRippleTime.value = 0.0;
-          water.material.uniforms.uRippleStrength.value = 0.0;
-        }
-      }
-      
-      // ★リプル状態更新★
+      // ★波紋状態を更新・全水面にuniformで送信★
       updateRippleState(delta);
+      sendRippleUniforms();
       
       // プレイヤーが水に入るかチェック（波紋生成）
       checkPlayerWaterEntry();
