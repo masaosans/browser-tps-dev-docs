@@ -228,7 +228,8 @@
         float rippleZ = 0.0;
         if (uRippleTime > 0.0 && uRippleStrength > 0.0) {
           // ローカル座標系で距離を計算（各水面メッシュ基準）
-          vec2 toOrigin = pos.xy - uRippleOriginLocal;
+          // PlaneGeometryはrotateX(-PI/2)で水平配置 → 水平面はXZ平面、pos.y=0
+          vec2 toOrigin = pos.xz - uRippleOriginLocal;
           float dist = length(toOrigin);
           
           // 波の半径（時間とともに広がる）
@@ -315,7 +316,7 @@
         
         // ★Phase 2: リップルの視覚的エフェクト（同心円状の反射パターン）★
         if (uRippleTime > 0.0 && uRippleStrength > 0.0) {
-          vec2 toOrigin = worldPos.xy - uRippleOriginLocal;
+          vec2 toOrigin = worldPos.xz - uRippleOriginLocal;
           float dist = length(toOrigin);
           
           // 広がる同心円（明るく、目立つ色）
@@ -1680,6 +1681,15 @@
       // ★波紋状態を更新・全水面にuniformで送信★
       updateRippleState(delta);
       sendRippleUniforms();
+      
+      // ★デバッグログ: 波紋の状態を監視★
+      if (activeRipple) {
+        console.log('[Ripple DEBUG] active:', true, 'time:', activeRipple.time.toFixed(2), 
+                    'strength:', activeRipple.strength.toFixed(3), 'x:', activeRipple.x.toFixed(1), 
+                    'z:', activeRipple.z.toFixed(1));
+      } else if (Math.floor(Date.now() / 1000) % 60 === 0) {
+        console.log('[Ripple DEBUG] active: false (no ripple being generated!)');
+      }
       
       // プレイヤーが水に入るかチェック（波紋生成）
       checkPlayerWaterEntry();
