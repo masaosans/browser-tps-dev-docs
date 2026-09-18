@@ -209,6 +209,8 @@
       uniform float uRippleTime; // リプル発生からの時間
       uniform vec2 uRippleOriginLocal; // ローカル座標系のリップル中心
       uniform float uRippleStrength; // リプルの強さ
+      // ★A: 照明uniform（太陽方向）★
+      uniform vec3 uSunDir; // 太陽の方向（ワールド空間、正規化済み）
       
       varying vec2 vUv;
       varying vec3 vNormal;
@@ -299,6 +301,9 @@
       uniform vec2 uRippleOriginLocal;
       uniform float uRippleStrength;
       uniform float uRippleDuration; // リップルの持続時間
+      // ★A: 照明uniform★
+      uniform vec3 uSunDir; // 太陽の方向（ワールド空間、正規化済み）
+      uniform vec3 uSunColor; // 太陽光の色
       
       varying vec2 vUv;
       varying vec3 vNormal;
@@ -309,10 +314,22 @@
         // 視点ベクトル
         vec3 viewDir = normalize(-vViewPos);
         
-        // ★Fresnel効果（見る角度によって反射率を変える）- 強化版★
-        float fresnel = pow(1.0 - max(dot(viewDir, vNormal), 0.0), 4.0);
+        // ★A: 照明計算（拡散＋鏡面反射）— 法線の変化を視覚に反映★
+        // 太陽光の方向（ワールド→ローカル変換不要：頂点シェーダーでlocal法線を計算しているため）
+        vec3 N = normalize(vNormal);
+        vec3 L = normalize(uSunDir);
         
-        // ★World座標ベースの色変化（メッシュ境界で切り替わらない）★
+        // 拡散反射（ランバート）— 波の斜面が太陽を反射して明るく
+        float diff = max(dot(N, L), 0.0) * 0.4; // 0〜0.4の柔らかい輝き
+        
+        // 鏡面反射（Phong）— 太陽の specular highlight
+        vec3 H = normalize(L + viewDir); // half vector
+        float spec = pow(max(dot(N, H), 0.0), 80.0) * 0.6; // 鋭い白い光
+        
+        // ★Fresnel効果（見る角度によって反射率を変える）- 強化版★
+        float fresnel = pow(1.0 - max(dot(viewDir, N), 0.0), 4.0);
+        
+        // 照明を水の色に適用（拡散で明るく、鏡面で白く強調）
         vec3 worldPos = vWorldPos;
         
         // 複数のsin波を合成して自然な濃淡（時間変化付き - ゆっくりした動き）
@@ -330,6 +347,10 @@
         float foam = sin(worldPos.x * 1.5 + uTime * 0.3) * cos(worldPos.y * 1.2 - uTime * 0.2);
         foam = smoothstep(0.6, 0.9, foam) * 0.08; // 白沫を広く、薄く
         waterColor += vec3(foam);
+        
+        // 照明を適用（拡散で全体的に明るく + 鏡面でハイライト）
+        waterColor += vec3(diff); // 拡散光で明るさ
+        waterColor += spec * uSunColor; // 鏡面反射で太陽の白い光
         
         // ★Fresnel反射で空の色を混ぜる（強化）★
         vec3 reflectColor = mix(waterColor, uSkyColor, fresnel * 0.8);
@@ -377,7 +398,10 @@
           uRippleTime: { value: 0.0 },
           uRippleOriginLocal: { value: new THREE.Vector2(0.0, 0.0) },
           uRippleStrength: { value: 0.0 },
-          uRippleDuration: { value: 4.0 }
+          uRippleDuration: { value: 4.0 },
+          // ★A: 照明uniform★
+          uSunDir: { value: new THREE.Vector3(1.0, 1.0, 0.5).normalize() },
+          uSunColor: { value: new THREE.Color(1.0, 0.95, 0.9) }
         },
         vertexShader: waterVertShader,
         fragmentShader: waterFragShader,
@@ -1701,6 +1725,12 @@
       // ★水面シェーダーの時間更新★
       for (const water of waterSurfaces) {
         water.material.uniforms.uTime.value += delta;
+        
+        // ★A: 照明uniformを送信（太陽方向・色）★
+        // 水面メッシュはrotateX(-PI/2)で水平配置 → ローカルYが上方向
+        const sunDirLocal = water.material.uniforms.uSunDir.value.clone();
+        // ローカル座標系では Y が上 → (1,1,0.5) をそのまま使用（法線もローカル基準）
+        water.material.uniforms.uSunDir.value.copy(sunDirLocal);
       }
       
       // ★波紋状態を更新・全水面にuniformで送信★
