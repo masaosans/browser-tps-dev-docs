@@ -265,9 +265,9 @@
           ringEnvelope *= timeFade;
           
           // 波の振動（中心から広がるパターン）— リング内で振動
-          // 振幅を大きく（1.2→2.5, 0.8→1.5）、物理的な盛り上がりを目立たせる
-          float rippleWave = sin(dist * 2.5 - uRippleTime * 4.0) * 2.5;
-          float rippleWave2 = sin(dist * 1.8 - uRippleTime * 3.0) * 1.5;
+          // 振幅を大幅に大きく（2.5→6.0, 1.5→4.0）、物理的な盛り上がりを目立たせる
+          float rippleWave = sin(dist * 2.5 - uRippleTime * 4.0) * 6.0;
+          float rippleWave2 = sin(dist * 1.8 - uRippleTime * 3.0) * 4.0;
           
           // 減衰（遠くなるほど小さく、時間が経つほど小さく）
           float timeDecay = exp(-uRippleTime * 0.5);
