@@ -376,6 +376,11 @@
         // ★Fresnel反射で空の色を混ぜる（強化）★
         vec3 reflectColor = mix(waterColor, uSkyColor, fresnel * 0.8);
         
+        // ★DEBUG: 波紋uniformが送信されているか確認 — 全水面を赤く表示★
+        if (uRippleTime > 0.0 && uRippleStrength > 0.0) {
+          reflectColor = mix(reflectColor, vec3(1.0, 0.2, 0.2), 0.7);
+        }
+        
         // 透明度（Fresnelが高いほど透明に→反射が見える）
         float alpha = mix(0.7, 0.95, fresnel);
         
