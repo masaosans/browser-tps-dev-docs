@@ -585,8 +585,8 @@
     let cumulativeMoveDistance = 0.0; // 累積移動距離
     let lastRippleSpawnTime = 0; // 最後に波紋を生成した時刻（連続生成防止）
     const RIPPLE_MOVE_THRESHOLD = 0.15; // この距離を累積したら波紋を生成
-    let underwaterMoveFrameCount = 0; // 水中で移動しているフレーム数
-    const FRAMES_BETWEEN_RIPPLES = 15; // このフレームごとに波紋を生成（移動中）
+    let timeInWater = 0.0; // 水中に滞在している時間（秒）
+    const TIME_BETWEEN_RIPPLES = 0.8; // 水中移動時の波紋生成間隔（秒）
     
     function checkPlayerWaterEntry() {
       const playerPos = playerGroup.position;
@@ -607,33 +607,38 @@
             playerInWater = true;
             lastPlayerPosInWater.copy(playerPos);
             cumulativeMoveDistance = 0.0;
-            underwaterMoveFrameCount = 0;
+            timeInWater = 0.0;
             console.log('[Ripple] Player entered water at', playerPos.x, playerPos.z);
             // 水に入った瞬間に小さな波紋を1つ生成（中心から広がる）
             createRipple(playerPos.x, playerPos.z);
           } else {
+            // 水中滞在時間を累積
+            timeInWater += 0.016; // ~60fps想定
+            
             // 移動距離を累積して判定
             const delta = new THREE.Vector3().subVectors(playerPos, lastPlayerPosInWater);
             const frameDist = delta.length();
             
-            // 移動しているか判定（速度がある場合）
             if (frameDist > 0.02) {
-              underwaterMoveFrameCount++;
               cumulativeMoveDistance += frameDist;
               
-              // デバッグログ
-              console.log('[Ripple DEBUG] move frame', underwaterMoveFrameCount, 'dist:', frameDist.toFixed(4), 'cum:', cumulativeMoveDistance.toFixed(3));
-              
-              // 移動フレームが一定数に達したら波紋を生成（時間ベースでも安全弁）
-              if (underwaterMoveFrameCount >= FRAMES_BETWEEN_RIPPLES && performance.now() - lastRippleSpawnTime > 200) {
-                lastRippleSpawnTime = performance.now();
-                underwaterMoveFrameCount = 0;
-                console.log('[Ripple DEBUG] spawning movement ripple at', playerPos.x, playerPos.z);
-                createRipple(playerPos.x, playerPos.z);
-              }
-            } else {
-              // 停止中はカウントをリセット
-              underwaterMoveFrameCount = 0;
+              // デバッグログ（移動時）
+              console.log('[Ripple DEBUG] underwater move, dist:', frameDist.toFixed(4), 'cum:', cumulativeMoveDistance.toFixed(3), 'timeInWater:', timeInWater.toFixed(2));
+            }
+            
+            // 移動距離ベースの判定（しきい値0.15を超えた時）
+            if (cumulativeMoveDistance > RIPPLE_MOVE_THRESHOLD && performance.now() - lastRippleSpawnTime > 300) {
+              lastRippleSpawnTime = performance.now();
+              console.log('[Ripple DEBUG] spawning movement ripple at', playerPos.x, playerPos.z);
+              createRipple(playerPos.x, playerPos.z);
+              cumulativeMoveDistance = 0.0; // 累積をリセット
+            }
+            // フォールバック: 移動距離が足りなくても、水中に一定時間いたら波紋を生成（泳ぎの演出）
+            else if (timeInWater > TIME_BETWEEN_RIPPLES && performance.now() - lastRippleSpawnTime > 300) {
+              lastRippleSpawnTime = performance.now();
+              console.log('[Ripple DEBUG] spawning time-based ripple at', playerPos.x, playerPos.z);
+              createRipple(playerPos.x, playerPos.z);
+              timeInWater = 0.0; // 時間をリセット
             }
             
             // 位置を更新（次のフレームの移動量計算用）
@@ -647,7 +652,7 @@
       if (playerInWater) {
         playerInWater = false;
         cumulativeMoveDistance = 0.0;
-        underwaterMoveFrameCount = 0;
+        timeInWater = 0.0;
       }
     }
     
