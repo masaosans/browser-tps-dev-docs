@@ -315,6 +315,8 @@
       // ★A: 照明uniform★
       uniform vec3 uSunDir; // 太陽の方向（ワールド空間、正規化済み）
       uniform vec3 uSunColor; // 太陽光の色
+      // ★DEBUG: 波紋を赤色で可視化★
+      uniform bool uDebugRippleRed; // trueなら波紋を赤く表示
       
       varying vec2 vUv;
       varying vec3 vNormal;
@@ -403,7 +405,9 @@
           rippleAttenuation = clamp(rippleAttenuation, 0.0, 1.0);
           
           // 反射色に白を追加（水面の盛り上がりとして視覚化）— 弱く
-          vec3 rippleColor = vec3(0.95, 0.98, 1.0) * ripplePattern * rippleAttenuation * uRippleStrength * 0.8;
+          // ★DEBUG: uDebugRippleRedがtrueなら波紋を赤色で可視化★
+          vec3 rippleBaseColor = uDebugRippleRed ? vec3(1.0, 0.2, 0.2) : vec3(0.95, 0.98, 1.0);
+          vec3 rippleColor = rippleBaseColor * ripplePattern * rippleAttenuation * uRippleStrength * 0.8;
           reflectColor += rippleColor;
           
           // 透明度を少し下げて（濃く）、盛り上がりを強調 — 控えめに
@@ -431,7 +435,9 @@
           uRippleDuration: { value: 4.0 },
           // ★A: 照明uniform★
           uSunDir: { value: new THREE.Vector3(1.0, 1.0, 0.5).normalize() },
-          uSunColor: { value: new THREE.Color(1.0, 0.95, 0.9) }
+          uSunColor: { value: new THREE.Color(1.0, 0.95, 0.9) },
+          // ★DEBUG: 波紋を赤色で可視化★
+          uDebugRippleRed: { value: true }
         },
         vertexShader: waterVertShader,
         fragmentShader: waterFragShader,
