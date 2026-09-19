@@ -376,18 +376,30 @@
         // 透明度（Fresnelが高いほど透明に→反射が見える）
         float alpha = mix(0.7, 0.95, fresnel);
         
-        // ★Phase 2: リップルの視覚的エフェクト（同心円状の反射パターン）— 小さく穏やかに★
+        // ★Phase 2: リップルの視覚的エフェクト（同心円状の反射パターン）— 中心から広がる環状★
         if (uRippleTime > 0.0 && uRippleStrength > 0.0) {
           vec2 toOrigin = worldPos.xz - uRippleOriginLocal;
           float dist = length(toOrigin);
           
-          // 広がる同心円（明るく、目立つ色）— 周波数を下げて穏やかに
+          // 波の前面（中心から広がる半径）— 頂点シェーダーと同期
+          float waveFrontRadius = uRippleTime * 0.3;
+          float distFromWaveFront = abs(dist - waveFrontRadius);
+          
+          // ★環状包絡線 — 中心と遠方はゼロ、波前面のみ表示（頂点シェーダーと同一）★
+          float ringEnvelope = exp(-distFromWaveFront * 8.0);
+          
+          // ★フェードイン遅延 — t=0では完全に表示されなくする★
+          float fadeIn = smoothstep(0.0, 0.5, uRippleTime);
+          ringEnvelope *= fadeIn;
+          
+          // 広がる同心円（波前面でのみ振動）— 環状に制限
           float ripplePattern = sin(dist * 2.0 - uRippleTime * 3.5);
-          ripplePattern = smoothstep(-0.6, 1.0, ripplePattern) * 0.7; // 白さを抑える
+          ripplePattern = smoothstep(-0.6, 1.0, ripplePattern) * 0.7;
             
           // 減衰（遠くなるほど、時間が経つほど小さく）— 持続時間で正規化
           float normalizedTime = uRippleTime / uRippleDuration;
-          float rippleAttenuation = exp(-dist * 0.3) * (1.0 - normalizedTime);
+          float timeDecay = (1.0 - normalizedTime);
+          float rippleAttenuation = ringEnvelope * timeDecay;
           rippleAttenuation = clamp(rippleAttenuation, 0.0, 1.0);
           
           // 反射色に白を追加（水面の盛り上がりとして視覚化）— 弱く
