@@ -376,10 +376,8 @@
         // ★Fresnel反射で空の色を混ぜる（強化）★
         vec3 reflectColor = mix(waterColor, uSkyColor, fresnel * 0.8);
         
-        // ★DEBUG: 波紋uniformが送信されているか確認 — 全水面を赤く表示★
-        if (uRippleTime > 0.0 && uRippleStrength > 0.0) {
-          reflectColor = mix(reflectColor, vec3(1.0, 0.2, 0.2), 0.7);
-        }
+        // ★ULTIMATE DEBUG: 全水面を常時赤色に固定（シェーダーが実行されているか確認）★
+        reflectColor = vec3(1.0, 0.15, 0.15);
         
         // 透明度（Fresnelが高いほど透明に→反射が見える）
         float alpha = mix(0.7, 0.95, fresnel);
@@ -570,6 +568,11 @@
      * 全水面に波紋状態をuniformで送信
      */
     function sendRippleUniforms() {
+      // ★DEBUG: 毎フレーム uniform 状態をログ出力（30フレームごと）★
+      if (Math.floor(performance.now() / 500) % 2 === 0) {
+        console.log('[Ripple SEND] activeRipple:', activeRipple ? 'NOT NULL' : 'NULL', '| time:', activeRipple ? activeRipple.time.toFixed(2) : 'N/A', '| strength:', activeRipple ? activeRipple.strength.toFixed(3) : 'N/A');
+      }
+      
       if (!activeRipple) {
         // 活発な波紋がなければ非アクティブを通知
         for (const water of waterSurfaces) {
