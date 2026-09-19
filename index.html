@@ -270,7 +270,7 @@
           
           // 減衰（遠くなるほど小さく、時間が経つほど小さく）
           float timeDecay = exp(-uRippleTime * 0.5);
-          float attenuation = spatialFade * timeDecay;
+          float attenuation = ringEnvelope * timeDecay;
           
           rippleZ = (rippleWave + rippleWave2) * attenuation * uRippleStrength;
         }
