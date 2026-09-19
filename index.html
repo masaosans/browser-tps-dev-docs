@@ -376,9 +376,6 @@
         // ★Fresnel反射で空の色を混ぜる（強化）★
         vec3 reflectColor = mix(waterColor, uSkyColor, fresnel * 0.8);
         
-        // ★ULTIMATE DEBUG: 全水面を常時赤色に固定（シェーダーが実行されているか確認）★
-        reflectColor = vec3(1.0, 0.15, 0.15);
-        
         // 透明度（Fresnelが高いほど透明に→反射が見える）
         float alpha = mix(0.7, 0.95, fresnel);
         
