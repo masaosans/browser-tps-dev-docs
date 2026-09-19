@@ -277,7 +277,7 @@
         }
         
         // Z軸（元はY）に波の高さを加算
-        pos.z += wave1 + wave2 + wave3 + rippleZ;
+        pos.y += wave1 + wave2 + wave3 + rippleZ;
         
         // 法線を偏微分から厳密に計算（全周波数帯を含む）
         // d/dx: pos.xに依存する波の勾配
