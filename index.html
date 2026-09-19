@@ -582,8 +582,9 @@
     // プレイヤーが水に入る時に波紋を生成
     let playerInWater = false;
     let lastPlayerPosInWater = new THREE.Vector3(); // 水中での直前の位置（移動判定用）
+    let cumulativeMoveDistance = 0.0; // 累積移動距離
     let lastRippleSpawnTime = 0; // 最後に波紋を生成した時刻（連続生成防止）
-    const RIPPLE_MOVE_THRESHOLD = 0.15; // この距離以上動いた時にのみ波紋を生成
+    const RIPPLE_MOVE_THRESHOLD = 0.3; // この距離を累積したら波紋を生成
     
     function checkPlayerWaterEntry() {
       const playerPos = playerGroup.position;
@@ -603,18 +604,20 @@
           if (!playerInWater) {
             playerInWater = true;
             lastPlayerPosInWater.copy(playerPos);
+            cumulativeMoveDistance = 0.0;
             console.log('[Ripple] Player entered water at', playerPos.x, playerPos.z);
             // 水に入った瞬間に小さな波紋を1つ生成（中心から広がる）
             createRipple(playerPos.x, playerPos.z);
           } else {
-            // 移動距離を計算
+            // 移動距離を累積して判定
             const delta = new THREE.Vector3().subVectors(playerPos, lastPlayerPosInWater);
-            const moveDist = delta.length();
+            cumulativeMoveDistance += delta.length();
             
-            // 一定距離以上動いた時、かつ直後の波紋生成間隔（0.5秒）が空いた時のみ生成
-            if (moveDist > RIPPLE_MOVE_THRESHOLD && performance.now() - lastRippleSpawnTime > 500) {
+            // 累積移動距離がしきい値を超えた時、かつ直後の波紋生成間隔（0.4秒）が空いた時のみ生成
+            if (cumulativeMoveDistance > RIPPLE_MOVE_THRESHOLD && performance.now() - lastRippleSpawnTime > 400) {
               lastRippleSpawnTime = performance.now();
               createRipple(playerPos.x, playerPos.z);
+              cumulativeMoveDistance = 0.0; // 累積をリセット
             }
             
             // 位置を更新（次のフレームの移動量計算用）
@@ -627,6 +630,7 @@
       // 水面外
       if (playerInWater) {
         playerInWater = false;
+        cumulativeMoveDistance = 0.0;
       }
     }
     
