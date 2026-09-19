@@ -611,11 +611,18 @@
           } else {
             // 移動距離を累積して判定
             const delta = new THREE.Vector3().subVectors(playerPos, lastPlayerPosInWater);
-            cumulativeMoveDistance += delta.length();
+            const frameDist = delta.length();
+            cumulativeMoveDistance += frameDist;
+            
+            // デバッグ: 水中移動状況をログ出力
+            if (frameDist > 0.01) {
+              console.log('[Ripple DEBUG] underwater move, frameDist:', frameDist.toFixed(4), 'cumulative:', cumulativeMoveDistance.toFixed(3));
+            }
             
             // 累積移動距離がしきい値を超えた時、かつ直後の波紋生成間隔（0.4秒）が空いた時のみ生成
             if (cumulativeMoveDistance > RIPPLE_MOVE_THRESHOLD && performance.now() - lastRippleSpawnTime > 400) {
               lastRippleSpawnTime = performance.now();
+              console.log('[Ripple DEBUG] spawning movement ripple at', playerPos.x, playerPos.z);
               createRipple(playerPos.x, playerPos.z);
               cumulativeMoveDistance = 0.0; // 累積をリセット
             }
