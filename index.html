@@ -405,15 +405,15 @@
           float rippleAttenuation = ringEnvelope * timeDecay;
           rippleAttenuation = clamp(rippleAttenuation, 0.0, 1.0);
           
-          // 反射色に白を追加（水面の盛り上がりとして視覚化）— 弱く
-          // ★DEBUG: 波紋が有効な時、水面全体を赤色で可視化（mix方式で確実に表示）★
-          if (uRippleTime > 0.0 && uRippleStrength > 0.0) {
-            reflectColor = mix(reflectColor, vec3(1.0, 0.2, 0.2), 0.6 * uRippleStrength);
-          } else {
-            vec3 rippleBaseColor = vec3(0.95, 0.98, 1.0);
-            vec3 rippleColor = rippleBaseColor * ripplePattern * rippleAttenuation * uRippleStrength * 0.8;
-            reflectColor += rippleColor;
-          }
+          // 反射色に白を追加（水面の盛り上がりとして視覚化）— 環状の白いリング
+          // ★DEBUG赤色mix()を削除 → 代わりに環状部分のみを明るく白く表示★
+          vec3 rippleBaseColor = vec3(0.95, 0.98, 1.0);
+          vec3 rippleColor = rippleBaseColor * ripplePattern * rippleAttenuation * uRippleStrength * 2.0;
+          reflectColor += rippleColor;
+          
+          // 環状の盛り上がりをさらに強調（白く明るく）
+          float ringHighlight = ringEnvelope * uRippleStrength * 0.5;
+          reflectColor += vec3(ringHighlight);
           
           // 透明度を少し下げて（濃く）、盛り上がりを強調 — 控えめに
           alpha = min(alpha + ripplePattern * 0.05 * rippleAttenuation, 0.98);
