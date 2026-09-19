@@ -609,14 +609,16 @@
         const waterLevel = water.position.y; // -1.45
         if (dx < halfW && dz < halfH && playerPos.y < waterLevel + 0.3) {
           // 水中 — 動いたタイミングでのみ波紋を生成
+          console.log('[Ripple DEBUG] IN WATER! playerInWater:', playerInWater, 'playerPos:', playerPos.x.toFixed(2), playerPos.z.toFixed(2));
           if (!playerInWater) {
             playerInWater = true;
             lastPlayerPosInWater.copy(playerPos);
             cumulativeMoveDistance = 0.0;
             timeInWater = 0.0;
-            console.log('[Ripple] Player entered water at', playerPos.x, playerPos.z);
+            console.log('[Ripple DEBUG] First entry - spawning ripple at', playerPos.x, playerPos.z);
             // 水に入った瞬間に小さな波紋を1つ生成（中心から広がる）
             createRipple(playerPos.x, playerPos.z);
+            console.log('[Ripple DEBUG] activeRipple after create:', activeRipple ? 'NOT NULL' : 'NULL');
           } else {
             // 水中滞在時間を累積（毎フレーム呼ばれる前提）
             timeInWater += 0.016; // ~60fps想定
