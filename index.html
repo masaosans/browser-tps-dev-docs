@@ -249,19 +249,19 @@
           vec2 toOrigin = pos.xz - uRippleOriginLocal;
           float dist = length(toOrigin);
           
-          // 波の前面（中心から広がる半径）— とてもゆっくり拡大
-          float waveFrontRadius = uRippleTime * 0.3;
+          // 波の前面（中心から広がる半径）— ゆっくり拡大（0.3→0.6）
+          float waveFrontRadius = uRippleTime * 0.6;
           
           // 波前面からの距離（波のリングがどこにあるか）
           float distFromWaveFront = abs(dist - waveFrontRadius);
           
           // ★指数関数的減衰 — 中心と遠方で完全にゼロ★
-          // smoothstepより急峻に減衰し、t=0では完全にゼロになる
-          float ringEnvelope = exp(-distFromWaveFront * 8.0);
+          // 環の幅を少し広く（8.0→4.0）、視認性を向上
+          float ringEnvelope = exp(-distFromWaveFront * 4.0);
           
           // ★時間経過で徐々に現れる（t=0→完全消去）★
-          // 0〜0.5秒で徐々に明るく
-          float timeFade = smoothstep(0.0, 0.5, uRippleTime);
+          // 0〜0.3秒で徐々に明るく
+          float timeFade = smoothstep(0.0, 0.3, uRippleTime);
           ringEnvelope *= timeFade;
           
           // 波の振動（中心から広がるパターン）— リング内で振動
@@ -382,14 +382,14 @@
           float dist = length(toOrigin);
           
           // 波の前面（中心から広がる半径）— 頂点シェーダーと同期
-          float waveFrontRadius = uRippleTime * 0.3;
+          float waveFrontRadius = uRippleTime * 0.6;
           float distFromWaveFront = abs(dist - waveFrontRadius);
           
           // ★環状包絡線 — 中心と遠方はゼロ、波前面のみ表示（頂点シェーダーと同一）★
-          float ringEnvelope = exp(-distFromWaveFront * 8.0);
+          float ringEnvelope = exp(-distFromWaveFront * 4.0);
           
           // ★フェードイン遅延 — t=0では完全に表示されなくする★
-          float fadeIn = smoothstep(0.0, 0.5, uRippleTime);
+          float fadeIn = smoothstep(0.0, 0.3, uRippleTime);
           ringEnvelope *= fadeIn;
           
           // 広がる同心円（波前面でのみ振動）— 環状に制限
@@ -506,8 +506,8 @@
       this.z = z;
       this.time = 0.0;
       this.duration = 4.0; // 秒
-      this.initialStrength = 0.12; // 小さくて自然な波紋（0.35→0.12）
-      this.strength = 0.12;
+      this.initialStrength = 0.35; // 視認可能な波紋の強さに戻す
+      this.strength = 0.35;
       
       /**
        * 毎フレーム更新
