@@ -255,9 +255,9 @@
           // 波前面からの距離（波のリングがどこにあるか）
           float distFromWaveFront = abs(dist - waveFrontRadius);
           
-          // ★指数関数的減衰 — 中心と遠方で完全にゼロ★
-          // 環の幅を少し広く（8.0→4.0）、視認性を向上
-          float ringEnvelope = exp(-distFromWaveFront * 4.0);
+          // ★環状包絡線 — 中心と遠方はゼロ、波前面のみ表示★
+          // 幅を広く（2.5→1.5）、より広い範囲で盛り上がりを表示
+          float ringEnvelope = exp(-distFromWaveFront * 1.5);
           
           // ★時間経過で徐々に現れる（t=0→完全消去）★
           // 0〜0.3秒で徐々に明るく
@@ -265,8 +265,9 @@
           ringEnvelope *= timeFade;
           
           // 波の振動（中心から広がるパターン）— リング内で振動
-          float rippleWave = sin(dist * 2.5 - uRippleTime * 4.0) * 0.7;
-          float rippleWave2 = sin(dist * 1.8 - uRippleTime * 3.0) * 0.4;
+          // 振幅を大きく（1.2→2.5, 0.8→1.5）、物理的な盛り上がりを目立たせる
+          float rippleWave = sin(dist * 2.5 - uRippleTime * 4.0) * 2.5;
+          float rippleWave2 = sin(dist * 1.8 - uRippleTime * 3.0) * 1.5;
           
           // 減衰（遠くなるほど小さく、時間が経つほど小さく）
           float timeDecay = exp(-uRippleTime * 0.5);
@@ -388,7 +389,7 @@
           float distFromWaveFront = abs(dist - waveFrontRadius);
           
           // ★環状包絡線 — 中心と遠方はゼロ、波前面のみ表示（頂点シェーダーと同一）★
-          float ringEnvelope = exp(-distFromWaveFront * 4.0);
+          float ringEnvelope = exp(-distFromWaveFront * 2.5);
           
           // ★フェードイン遅延 — t=0では完全に表示されなくする★
           float fadeIn = smoothstep(0.0, 0.3, uRippleTime);
