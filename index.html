@@ -256,12 +256,12 @@
           float distFromWaveFront = abs(dist - waveFrontRadius);
           
           // ★環状包絡線 — 中心と遠方はゼロ、波前面のみ表示★
-          // 幅を広く（2.5→1.5）、より広い範囲で盛り上がりを表示
-          float ringEnvelope = exp(-distFromWaveFront * 1.5);
+          // 幅を広く（1.5→1.0）、視認性を向上
+          float ringEnvelope = exp(-distFromWaveFront * 1.0);
           
-          // ★時間経過で徐々に現れる（t=0→完全消去）★
-          // 0〜0.3秒で徐々に明るく
-          float timeFade = smoothstep(0.0, 0.3, uRippleTime);
+          // ★時間経過で徐々に現れる（t=0→即座に表示）★
+          // 0〜0.1秒で急速に現れる（遅延を最小化）
+          float timeFade = smoothstep(0.0, 0.1, uRippleTime);
           ringEnvelope *= timeFade;
           
           // 波の振動（中心から広がるパターン）— リング内で振動
@@ -389,10 +389,10 @@
           float distFromWaveFront = abs(dist - waveFrontRadius);
           
           // ★環状包絡線 — 中心と遠方はゼロ、波前面のみ表示（頂点シェーダーと同一）★
-          float ringEnvelope = exp(-distFromWaveFront * 2.5);
+          float ringEnvelope = exp(-distFromWaveFront * 1.0);
           
-          // ★フェードイン遅延 — t=0では完全に表示されなくする★
-          float fadeIn = smoothstep(0.0, 0.3, uRippleTime);
+          // ★フェードイン遅延 — t=0→即座に表示★
+          float fadeIn = smoothstep(0.0, 0.1, uRippleTime);
           ringEnvelope *= fadeIn;
           
           // 広がる同心円（波前面でのみ振動）— 環状に制限
