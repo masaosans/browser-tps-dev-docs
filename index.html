@@ -276,8 +276,8 @@
           rippleZ = (rippleWave + rippleWave2) * attenuation * uRippleStrength;
         }
         
-        // Z軸（元はY）に波の高さを加算
-        pos.y += wave1 + wave2 + wave3 + rippleZ;
+        // Z軸（元はY）に波の高さを加算 — 垂直方向（pos.zがワールドY）
+        pos.z += rippleZ;
         
         // 法線を偏微分から厳密に計算（全周波数帯を含む）
         // d/dx: pos.xに依存する波の勾配
@@ -406,9 +406,8 @@
           rippleAttenuation = clamp(rippleAttenuation, 0.0, 1.0);
           
           // 反射色に白を追加（水面の盛り上がりとして視覚化）— 環状の白いリング
-          // ★DEBUG赤色mix()を削除 → 代わりに環状部分のみを明るく白く表示★
-          vec3 rippleBaseColor = vec3(0.95, 0.98, 1.0);
-          vec3 rippleColor = rippleBaseColor * ripplePattern * rippleAttenuation * uRippleStrength * 2.0;
+          // ★DEBUG: 全面赤色mix()を削除し、波紋パターンを明確に表示★
+          vec3 rippleColor = vec3(0.95, 0.98, 1.0) * ripplePattern * rippleAttenuation * uRippleStrength * 2.0;
           reflectColor += rippleColor;
           
           // 環状の盛り上がりをさらに強調（白く明るく）
