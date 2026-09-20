@@ -241,7 +241,7 @@
                + hiWaveX + hiWaveY + hiWaveXY
                + loWaveX + loWaveY;
         
-        // ★リップル変位（円形波）— 中心から広がっていく表現★
+        // ★リップル変位（円形波）— 自然で穏やかな水たまりの表現★
         float rippleZ = 0.0;
         if (uRippleTime > 0.0 && uRippleStrength > 0.0) {
           // ローカル座標系で距離を計算（各水面メッシュ基準）
@@ -249,31 +249,38 @@
           vec2 toOrigin = pos.xz - uRippleOriginLocal;
           float dist = length(toOrigin);
           
-          // 波の前面（中心から広がる半径）— ゆっくり拡大（0.3→0.6）
-          float waveFrontRadius = uRippleTime * 0.6;
+          // 波の前面（中心から広がる半径）— ゆっくり拡大（実世界の水面に合わせて遅く）
+          float waveFrontRadius = uRippleTime * 0.35;
           
           // 波前面からの距離（波のリングがどこにあるか）
           float distFromWaveFront = abs(dist - waveFrontRadius);
           
-          // ★環状包絡線 — 中心と遠方はゼロ、波前面のみ表示★
-          // 幅を広く（1.5→1.0）、視認性を向上
-          float ringEnvelope = exp(-distFromWaveFront * 1.0);
+          // ★自然な減衰 — 鋭すぎない滑らかな包絡線★
+          // 実世界の水面は遠ざかるほど徐々に小さくなる → 広めのexp係数
+          float ringEnvelope = exp(-distFromWaveFront * 0.4);
+          
+          // 波前面の後ろにもう少し波を残す（尾を引く表現）
+          // 波前面より内側（中心寄り）にもわずかな振動が残る
+          float trailingWave = sin(dist * 3.0 - uRippleTime * 2.5) * 0.3;
+          float trailingFade = exp(-distFromWaveFront * 0.6) * 0.4;
+          trailingWave *= smoothstep(1.5, 0.0, distFromWaveFront) * trailingFade;
           
           // ★時間経過で徐々に現れる（t=0→即座に表示）★
-          // 0〜0.1秒で急速に現れる（遅延を最小化）
-          float timeFade = smoothstep(0.0, 0.1, uRippleTime);
+          float timeFade = smoothstep(0.0, 0.15, uRippleTime);
           ringEnvelope *= timeFade;
           
-          // 波の振動（中心から広がるパターン）— リング内で振動
-          // 振幅を大幅に大きく（2.5→6.0, 1.5→4.0）、物理的な盛り上がりを目立たせる
-          float rippleWave = sin(dist * 2.5 - uRippleTime * 4.0) * 6.0;
-          float rippleWave2 = sin(dist * 1.8 - uRippleTime * 3.0) * 4.0;
+          // ★複数の波の重なり — 自然な干渉模様★
+          // 基本波（低周波、大きなうねり）
+          float rippleWaveMain = sin(dist * 2.0 - uRippleTime * 3.5) * 1.0;
+          // 補助波（高周波、小さな揺らぎ）— 振幅は控えめに
+          float rippleWaveFine = sin(dist * 4.5 - uRippleTime * 5.0) * 0.25;
           
           // 減衰（遠くなるほど小さく、時間が経つほど小さく）
-          float timeDecay = exp(-uRippleTime * 0.5);
+          float timeDecay = exp(-uRippleTime * 0.3);
           float attenuation = ringEnvelope * timeDecay;
           
-          rippleZ = (rippleWave + rippleWave2) * attenuation * uRippleStrength;
+          // 全成分を合成 — 振幅は全体として控えめに調整
+          rippleZ = (rippleWaveMain + rippleWaveFine + trailingWave) * attenuation * uRippleStrength * 0.15;
         }
         
         // Z軸（元はY）に波の高さを加算 — 垂直方向（pos.zがワールドY、基本波と統一）
