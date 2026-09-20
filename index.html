@@ -391,12 +391,12 @@
           vec2 toOrigin = worldPos.xz - uRippleOriginLocal;
           float dist = length(toOrigin);
           
-          // 波の前面（中心から広がる半径）— 頂点シェーダーと同期
-          float waveFrontRadius = uRippleTime * 0.6;
+          // 波の前面（中心から広がる半径）— 頂点シェーダーと同期 (0.35/s)
+          float waveFrontRadius = uRippleTime * 0.35;
           float distFromWaveFront = abs(dist - waveFrontRadius);
           
-          // ★環状包絡線 — 中心と遠方はゼロ、波前面のみ表示（頂点シェーダーと同一）★
-          float ringEnvelope = exp(-distFromWaveFront * 1.0);
+          // ★環状包絡線 — 頂点シェーダーと同一 (exp(-d*0.4))★
+          float ringEnvelope = exp(-distFromWaveFront * 0.4);
           
           // ★フェードイン遅延 — t=0→即座に表示★
           float fadeIn = smoothstep(0.0, 0.1, uRippleTime);
@@ -412,17 +412,12 @@
           float rippleAttenuation = ringEnvelope * timeDecay;
           rippleAttenuation = clamp(rippleAttenuation, 0.0, 1.0);
           
-          // 反射色に白を追加（水面の盛り上がりとして視覚化）— 環状の白いリング
-          // ★DEBUG: 全面赤色mix()を削除し、波紋パターンを明確に表示★
-          vec3 rippleColor = vec3(0.95, 0.98, 1.0) * ripplePattern * rippleAttenuation * uRippleStrength * 2.0;
-          reflectColor += rippleColor;
-          
-          // 環状の盛り上がりをさらに強調（白く明るく）
-          float ringHighlight = ringEnvelope * uRippleStrength * 0.5;
-          reflectColor += vec3(ringHighlight);
+          // 反射色に白を追加（水面の盛り上がりとして視覚化）— パターンベースの細いリング
+          float rippleBrightness = ripplePattern * rippleAttenuation * uRippleStrength * 0.6;
+          reflectColor += vec3(0.9, 0.95, 1.0) * clamp(rippleBrightness, 0.0, 0.4);
           
           // 透明度を少し下げて（濃く）、盛り上がりを強調 — 控えめに
-          alpha = min(alpha + ripplePattern * 0.05 * rippleAttenuation, 0.98);
+          alpha = min(alpha + ripplePattern * 0.03 * rippleAttenuation, 0.98);
         }
         
         gl_FragColor = vec4(reflectColor, alpha);
@@ -639,26 +634,9 @@
             // 水中滞在時間を累積（毎フレーム呼ばれる前提）
             timeInWater += 0.016; // ~60fps想定
             
-            // 移動距離を累積して判定 — しきい値を大幅に低下
-            const delta = new THREE.Vector3().subVectors(playerPos, lastPlayerPosInWater);
-            const frameDist = delta.length();
-            
-            if (frameDist > 0.005) { // 非常に小さな移動でも検知
-              cumulativeMoveDistance += frameDist;
-            }
-            
-            // 移動距離ベースの判定（しきい値0.05に低下、約3-8フレーム分）
-            if (cumulativeMoveDistance > 0.05 && performance.now() - lastRippleSpawnTime > 150) {
-              lastRippleSpawnTime = performance.now();
-              createRipple(playerPos.x, playerPos.z);
-              cumulativeMoveDistance = 0.0;
-            }
-            // フォールバック: 移動距離が足りなくても、水中に一定時間いたら波紋を生成（泳ぎの演出）
-            else if (timeInWater > 0.5 && performance.now() - lastRippleSpawnTime > 150) {
-              lastRippleSpawnTime = performance.now();
-              createRipple(playerPos.x, playerPos.z);
-              timeInWater = 0.0;
-            }
+            // ★既存の波紋を殺さない — 拡大中はそのままにしておく★
+            // 移動しても新しい波紋を生成しない（自然な広がりを実現）
+            // 現在の波紋が消えた後に、初めて新しいのを生成する
             
             // 位置を更新（次のフレームの移動量計算用）
             lastPlayerPosInWater.copy(playerPos);
