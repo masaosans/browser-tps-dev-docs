@@ -249,29 +249,27 @@
           vec2 toOrigin = pos.xz - uRippleOriginLocal;
           float dist = length(toOrigin);
           
-          // 波の前面（中心から広がる半径）— ゆっくり拡大（実世界の水面に合わせて遅く）
+          // 波の前面（中心から広がる半径）— t=0で0、徐々に拡大（点から始まる）
           float waveFrontRadius = uRippleTime * 0.35;
-          
-          // ★初期ドット表現 — t=0時は着水地点で小さな点として開始★
-          // 中心にリングが立たないよう、最低限の半径を保つ
-          waveFrontRadius += 0.08;
           
           // 波前面からの距離（波のリングがどこにあるか）
           float distFromWaveFront = abs(dist - waveFrontRadius);
           
-          // ★狭い包絡線 — 波前面のみを表示、他は非表示★
-          // 複数の輪が重ならないよう、鋭めの減衰に変更（0.4→1.5）
-          float ringEnvelope = exp(-distFromWaveFront * 1.5);
+          // ★内側カット — 波前面より中心寄りの振動を完全に抑制★
+          // これにより「内側の輪」が消え、リングのみが表示される
+          float innerCutoff = smoothstep(waveFrontRadius * 0.2, waveFrontRadius * 0.7, dist);
           
-          // ★時間経過で徐々に現れる（t=0→即座に表示）★
-          float timeFade = smoothstep(0.0, 0.15, uRippleTime);
+          // ★包絡線 — 波前面のみを表示★
+          float ringEnvelope = exp(-distFromWaveFront * 1.5) * innerCutoff;
+          
+          // 時間経過で徐々に現れる（0〜0.25秒でフェードイン）
+          float timeFade = smoothstep(0.0, 0.25, uRippleTime);
           ringEnvelope *= timeFade;
           
-          // ★単一の波 — 自然な干渉模様はあえて作らない★
-          // 複数の周波数が重なると複数輪が生まれる → 基本波のみ
+          // 単一の波 — 干渉模様は作らない
           float rippleWave = sin(dist * 2.0 - uRippleTime * 3.5) * 1.0;
           
-          // 減衰（遠くなるほど小さく、時間が経つほど小さく）
+          // 減衰（時間が経つほど小さく）
           float timeDecay = exp(-uRippleTime * 0.3);
           float attenuation = ringEnvelope * timeDecay;
           
@@ -387,12 +385,16 @@
           vec2 toOrigin = worldPos.xz - uRippleOriginLocal;
           float dist = length(toOrigin);
           
-          // 波の前面（中心から広がる半径）— 頂点シェーダーと同期 (0.35/s + 0.08初期ドット)
-          float waveFrontRadius = uRippleTime * 0.35 + 0.08;
+          // 波の前面（中心から広がる半径）— 頂点シェーダーと同期 (t=0で0, 0.35/s)
+          float waveFrontRadius = uRippleTime * 0.35;
           float distFromWaveFront = abs(dist - waveFrontRadius);
           
-          // ★環状包絡線 — 頂点シェーダーと同一 (exp(-d*1.5))★
-          float ringEnvelope = exp(-distFromWaveFront * 1.5);
+          // ★内側カット — 頂点シェーダーと同一★
+          // 波前面より中心寄りの振動を完全に抑制
+          float innerCutoff = smoothstep(waveFrontRadius * 0.2, waveFrontRadius * 0.7, dist);
+          
+          // ★環状包絡線 — 頂点シェーダーと同一 (exp(-d*1.5) * innerCutoff)★
+          float ringEnvelope = exp(-distFromWaveFront * 1.5) * innerCutoff;
           
           // ★フェードイン遅延 — t=0→即座に表示★
           float fadeIn = smoothstep(0.0, 0.1, uRippleTime);
