@@ -852,7 +852,7 @@
     const SHOOT_KICKBACK_SPEED = 25; // キックバック速度
     let isFiringFlag = false; // ★射撃構え用: FIRE長押し状態★
     
-    // ★左腕（武器側）のベース位置★
+    // ★左腕（武器側）のベース位置 — 右腕と同じ間隔(0.55)で身体から離す★
     const LEFT_ARM_BASE_X = 0.55;
     const RIGHT_ARM_BASE_Z = 0;
     
@@ -945,7 +945,7 @@
     gunGroup.rotation.x = Math.PI / 2;
     
     // ★拳銃を左腕メッシュの先端に配置（手が握る位置）★
-    gunGroup.position.set(0, -0.15, 0.2); // グリップが手に接する + バレル寄り
+    gunGroup.position.set(0.12, -0.15, 0.2); // グリップが手に接する + バレル寄り — 身体側から離すためX+オフセット
     leftArmMesh.add(gunGroup);
     
     playerGroup.add(leftArmPivot);
