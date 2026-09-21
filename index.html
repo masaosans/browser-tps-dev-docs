@@ -634,9 +634,30 @@
             // 水中滞在時間を累積（毎フレーム呼ばれる前提）
             timeInWater += 0.016; // ~60fps想定
             
-            // ★既存の波紋を殺さない — 拡大中はそのままにしておく★
-            // 移動しても新しい波紋を生成しない（自然な広がりを実現）
-            // 現在の波紋が消えた後に、初めて新しいのを生成する
+            // ★既存の拡大中の波紋は殺さない★
+            // activeRippleがnull（現在の波紋が消えた）後にのみ、新規生成
+            if (!activeRipple) {
+              // 移動距離ベースの判定 — しきい値を大幅に低下
+              const delta = new THREE.Vector3().subVectors(playerPos, lastPlayerPosInWater);
+              const frameDist = delta.length();
+              
+              if (frameDist > 0.005) { // 非常に小さな移動でも検知
+                cumulativeMoveDistance += frameDist;
+              }
+              
+              // 移動距離ベースの判定（しきい値0.08、間隔200ms）
+              if (cumulativeMoveDistance > 0.08 && performance.now() - lastRippleSpawnTime > 200) {
+                lastRippleSpawnTime = performance.now();
+                createRipple(playerPos.x, playerPos.z);
+                cumulativeMoveDistance = 0.0;
+              }
+              // フォールバック: 移動距離が足りなくても、水中に一定時間いたら波紋を生成（泳ぎの演出）
+              else if (timeInWater > 0.8 && performance.now() - lastRippleSpawnTime > 200) {
+                lastRippleSpawnTime = performance.now();
+                createRipple(playerPos.x, playerPos.z);
+                timeInWater = 0.0;
+              }
+            }
             
             // 位置を更新（次のフレームの移動量計算用）
             lastPlayerPosInWater.copy(playerPos);
