@@ -1401,24 +1401,22 @@
 
     canvas.addEventListener('touchstart', (e) => {
       const touch = e.touches[0];
-      if (touch.clientX > window.innerWidth / 2) {
-        lastTouchX = touch.clientX;
-        lastTouchY = touch.clientY;
-      }
+      // 画面全体でカメラ操作を有効化（右上限定を解除）
+      lastTouchX = touch.clientX;
+      lastTouchY = touch.clientY;
     }, { passive: true });
 
     canvas.addEventListener('touchmove', (e) => {
       const touch = e.touches[0];
-      if (touch.clientX > window.innerWidth / 2) {
-        const dx = touch.clientX - lastTouchX;
-        const dy = touch.clientY - lastTouchY;
-        
-        cameraYaw -= dx * TOUCH_SENSITIVITY;
-        cameraPitch = Math.max(SPRING_ARM.MIN_PITCH, Math.min(SPRING_ARM.MAX_PITCH, cameraPitch - dy * TOUCH_SENSITIVITY));
-        
-        lastTouchX = touch.clientX;
-        lastTouchY = touch.clientY;
-      }
+      // 画面全体でカメラ操作を有効化
+      const dx = touch.clientX - lastTouchX;
+      const dy = touch.clientY - lastTouchY;
+      
+      cameraYaw -= dx * TOUCH_SENSITIVITY;
+      cameraPitch = Math.max(SPRING_ARM.MIN_PITCH, Math.min(SPRING_ARM.MAX_PITCH, cameraPitch - dy * TOUCH_SENSITIVITY));
+      
+      lastTouchX = touch.clientX;
+      lastTouchY = touch.clientY;
     }, { passive: true });
 
     // ============================================================
