@@ -17,6 +17,7 @@
     #fire-btn { position: absolute; bottom: 20px; right: 30px; width: 120px; height: 120px; border-radius: 50%; background: rgba(255,68,68,0.8); border: 4px solid white; color: white; font-size: 18px; font-weight: bold; pointer-events: auto; cursor: pointer; }
     #reload-btn { position: absolute; bottom: 170px; right: 30px; width: 55px; height: 55px; border-radius: 50%; background: rgba(68,136,255,0.7); border: 2px solid white; color: white; font-size: 11px; font-weight: bold; pointer-events: auto; cursor: pointer; }
     #cover-btn { position: absolute; bottom: 170px; right: 95px; width: 55px; height: 55px; border-radius: 50%; background: rgba(68,255,68,0.7); border: 2px solid white; color: white; font-size: 11px; font-weight: bold; pointer-events: auto; cursor: pointer; }
+    #jump-btn { position: absolute; bottom: 235px; right: 95px; width: 55px; height: 55px; border-radius: 50%; background: rgba(255,255,0,0.7); border: 2px solid white; color: white; font-size: 11px; font-weight: bold; pointer-events: auto; cursor: pointer; }
     #hud { position: absolute; top: 15px; left: 15px; right: 15px; display: flex; justify-content: space-between; align-items: center; }
     #hp-container { width: 200px; height: 24px; background: rgba(0,0,0,0.6); border: 2px solid #fff; border-radius: 4px; overflow: hidden; }
     #hp-fill { height: 100%; background: linear-gradient(to right, #e74c3c, #ff6b6b); width: 100%; transition: width 0.3s; }
@@ -80,6 +81,7 @@
     <button id="fire-btn">🔫 FIRE</button>
     <button id="reload-btn">R</button>
     <button id="cover-btn">COVER</button>
+    <button id="jump-btn">⬆ JUMP</button>
   </div>
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
@@ -1791,6 +1793,17 @@
     // ★COVERボタン = ADS切替★
     const coverBtn = document.getElementById('cover-btn');
     coverBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); toggleAim(); });
+
+    // ★JUMPボタン = ジャンプ（スマホ操作前提）★
+    const jumpBtn = document.getElementById('jump-btn');
+    jumpBtn.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      // 地面にいる時だけ跳ぶ
+      if (!isJumping) {
+        isJumping = true;
+        verticalVelocity = JUMP_FORCE;
+      }
+    });
 
     // ============================================================
     // レスポンシブ対応
