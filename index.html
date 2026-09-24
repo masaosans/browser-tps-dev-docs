@@ -847,6 +847,12 @@
     const WALK_SPEED = 12; // 歩行速度
     let isMovingFlag = false; // ★ウェポンスウェイ用: 移動状態を共有★
     
+    // ★ジャンプ物理★
+    const GRAVITY = -15.0; // 重力加速度 (m/s²)
+    const JUMP_FORCE = 6.0; // ジャンプ力
+    let isJumping = false; // 空中にいるか
+    let verticalVelocity = 0.0; // 垂直速度
+    
     // ★射撃モーション用★
     let shootKickback = 0;   // 射撃時の腕のキックバック（0→1→0）
     const SHOOT_KICKBACK_SPEED = 25; // キックバック速度
@@ -1275,9 +1281,29 @@
         playerGroup.rotation.y = playerRotationTarget;
       }
       
-      // ★地形追従★
-      const terrainY = getTerrainHeight(playerGroup.position.x, playerGroup.position.z);
-      playerGroup.position.y = terrainY + 0.2;
+      // ★ジャンプ物理（重力＋地面判定）★
+      if (isJumping) {
+        // 重力で垂直速度を変化
+        verticalVelocity += GRAVITY * delta;
+        
+        // Y座標を更新
+        playerGroup.position.y += verticalVelocity * delta;
+        
+        // 地面判定
+        const terrainY = getTerrainHeight(playerGroup.position.x, playerGroup.position.z);
+        const groundLevel = terrainY + 0.2; // プレイヤーの足元位置
+        
+        if (playerGroup.position.y <= groundLevel) {
+          // 地面に着地
+          playerGroup.position.y = groundLevel;
+          verticalVelocity = 0.0;
+          isJumping = false;
+        }
+      } else {
+        // 地上にいる場合は地形追従（常に接地）
+        const terrainY = getTerrainHeight(playerGroup.position.x, playerGroup.position.z);
+        playerGroup.position.y = terrainY + 0.2;
+      }
       
       // ★脚アニメーション（移動中のみ）★
       if (isMoving) {
@@ -1425,9 +1451,11 @@
     document.addEventListener('keydown', (e) => {
       if (e.code === 'Space') {
         e.preventDefault();
-        const playerPos = playerGroup.position;
-        console.log('[DEBUG] Space pressed - spawning ripple at', playerPos.x.toFixed(2), playerPos.z.toFixed(2));
-        createRipple(playerPos.x, playerPos.z);
+        // ジャンプ: 地面にいる時だけ跳ぶ
+        if (!isJumping) {
+          isJumping = true;
+          verticalVelocity = JUMP_FORCE;
+        }
       }
     });
 
